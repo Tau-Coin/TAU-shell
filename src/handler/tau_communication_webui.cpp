@@ -30,9 +30,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "tau_communication_webui.hpp"
-#include "json_util.hpp"
-#include "base64.hpp"
+#include "handler/tau_communication_webui.hpp"
+#include "rpc/json_util.hpp"
+#include "rpc/base64.hpp"
 
 #include <string.h> // for strcmp()
 #include <stdio.h>
@@ -43,15 +43,16 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/asio/error.hpp>
 
 extern "C" {
-#include "local_mongoose.h"
-#include "jsmn.h"
+#include "rpc/local_mongoose.h"
+#include "rpc/jsmn.h"
 }
 
 #include "libTAU/session.hpp"
 #include "libTAU/session_status.hpp"
-#include "response_buffer.hpp" // for appendf
-#include "escape_json.hpp" // for escape_json
-#include "save_settings.hpp"
+#include "handler/response_buffer.hpp" // for appendf
+#include "handler/escape_json.hpp" // for escape_json
+
+using namespace libTAU;
 
 namespace TauShell
 {
@@ -67,14 +68,14 @@ void return_error(mg_connection* conn, char const* msg)
 void return_failure(std::vector<char>& buf, char const* msg, std::int64_t tag)
 {
 	buf.clear();
-	appendf(buf, "{ \"result\": \"%s\", \"tag\": %" PRId64 "}", msg, tag);
+	appendf(buf, "{ \"result\": \"%s\", \"tag\": %" "I64d" "}", msg, tag);
 }
 
 struct method_handler
 {
 	char const* method_name;
 	void (tau_communication_webui::*fun)(std::vector<char>&, jsmntok_t* args, std::int64_t tag
-		, char* buffer, permissions_interface const* p);
+		, char* buffer);
 };
 
 static method_handler handlers[] =
@@ -82,7 +83,7 @@ static method_handler handlers[] =
 	{"session-stats", &tau_communication_webui::session_stats},
 };
 
-void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer, permissions_interface const* p)
+void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
 {
 	// we expect a "method" in the top level
 	jsmntok_t* method = find_key(tokens, buffer, "method", JSMN_STRING);
@@ -105,9 +106,9 @@ void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t*
 		handled = true;
 
 		if (args) buffer[args->end] = 0;
-//		printf("%s: %s\n", m, args ? buffer + args->start : "{}");
+		//printf("%s: %s\n", m, args ? buffer + args->start : "{}");
 
-		(this->*handlers[i].fun)(buf, args, tag, buffer, p);
+		(this->*handlers[i].fun)(buf, args, tag, buffer);
 		break;
 	}
 
@@ -118,31 +119,23 @@ void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t*
 
 char const* to_bool(bool b) { return b ? "true" : "false"; }
 
-void tau_communication_webui::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-	if (!p->allow_session_status())
-	{
-		return_failure(buf, "permission denied", tag);
-		return;
-	}
-
 	// TODO: post session stats instead, and capture the performance counters
 	session_status st = m_ses.status();
 
-	appendf(buf, "{ \"result\": \"success\", \"tag\": %" PRId64 ", "
+	appendf(buf, "{ \"result\": \"success\", \"tag\": %" "I64d" ", "
 		"\"arguments\": { "
 		"\"uploadSpeed\": %d,"
 		"\"cumulative-stats\": {"
-			"\"uploadedBytes\": %" PRId64 ","
-			"\"downloadedBytes\": %" PRId64 ","
-			"\"filesAdded\": %d,"
+			"\"uploadedBytes\": %" "I64d" ","
+			"\"downloadedBytes\": %" "I64d" ","
 			"\"sessionCount\": %d,"
 			"\"secondsActive\": %d"
 			"},"
 		"\"current-stats\": {"
-			"\"uploadedBytes\": %" PRId64 ","
-			"\"downloadedBytes\": %" PRId64 ","
-			"\"filesAdded\": %d,"
+			"\"uploadedBytes\": %" "I64d" ","
+			"\"downloadedBytes\": %" "I64d" ","
 			"\"sessionCount\": %d,"
 			"\"secondsActive\": %d"
 			"}"
@@ -151,67 +144,65 @@ void tau_communication_webui::session_stats(std::vector<char>& buf, jsmntok_t* a
 		// cumulative-stats (not supported)
 		, st.total_payload_upload
 		, st.total_payload_download
-		, st.num_torrents
 		, 1
 		, time(nullptr) - m_start_time
 		// current-stats
 		, st.total_payload_upload
 		, st.total_payload_download
-		, st.num_torrents
 		, 1
 		, time(nullptr) - m_start_time);
 }
 
 //communication apis
-void tau_communication_webui::new_account_seed(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::new_account_seed(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
 // main loop time interval
-void tau_communication_webui::set_loop_time_interval(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::set_loop_time_interval(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
 //friends
-void tau_communication_webui::add_new_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::add_new_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
-void tau_communication_webui::delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
-void tau_communication_webui::get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
-void tau_communication_webui::set_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::set_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
-void tau_communication_webui::unset_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::unset_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
-void tau_communication_webui::update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
-void tau_communication_webui::set_active_friends(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void tau_communication_webui::set_active_friends(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
 // message
-void add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p)
+void add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
@@ -219,25 +210,7 @@ void add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char
 tau_communication_webui::tau_communication_webui(session& s)
 	: m_ses(s)
 {
-	if (m_auth == NULL)
-	{
-		const static no_auth n;
-		m_auth = &n;
-	}
 
-	m_params_model.save_path = ".";
-	m_start_time = time(NULL);
-
-	if (m_settings)
-	{
-		m_params_model.save_path = m_settings->get_str("save_path", ".");
-		int port = m_settings->get_int("listen_port", -1);
-		if (port != -1)
-		{
-			error_code ec;
-			m_ses.listen_on(std::make_pair(port, port+1), ec);
-		}
-	}
 }
 
 tau_communication_webui::~tau_communication_webui() {}
@@ -249,50 +222,6 @@ bool tau_communication_webui::handle_http(mg_connection* conn, mg_request_info c
 		&& strcmp(request_info->uri, "/rpc")
 		&& strcmp(request_info->uri, "/upload"))
 		return false;
-
-	permissions_interface const* perms = parse_http_auth(conn, m_auth);
-	if (perms == NULL)
-	{
-		mg_printf(conn, "HTTP/1.1 401 Unauthorized\r\n"
-			"WWW-Authenticate: Basic realm=\"BitTorrent\"\r\n"
-			"Content-Length: 0\r\n\r\n");
-		return true;
-	}
-
-	if (strcmp(request_info->uri, "/upload") == 0)
-	{
-		if (!perms->allow_add())
-		{
-			mg_printf(conn, "HTTP/1.1 401 Unauthorized\r\n"
-				"WWW-Authenticate: Basic realm=\"BitTorrent\"\r\n"
-				"Content-Length: 0\r\n\r\n");
-			return true;
-		}
-		add_torrent_params p = m_params_model;
-		error_code ec;
-		if (!parse_torrent_post(conn, p, ec))
-		{
-			mg_printf(conn, "HTTP/1.1 400 Invalid Request\r\n"
-				"Connection: close\r\n\r\n");
-			return true;
-		}
-
-		char buf[10];
-		if (mg_get_var(request_info->query_string, strlen(request_info->query_string)
-			, "paused", buf, sizeof(buf)) > 0
-			&& strcmp(buf, "true") == 0)
-		{
-			p.flags |= add_torrent_params::flag_paused;
-			p.flags &= ~add_torrent_params::flag_auto_managed;
-		}
-
-		m_ses.async_add_torrent(p);
-
-		mg_printf(conn, "HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/json\r\n"
-			"Content-Length: 0\r\n\r\n");
-		return true;
-	}
 
 	char const* cl = mg_get_header(conn, "content-length");
 	std::vector<char> post_body;
@@ -344,7 +273,7 @@ bool tau_communication_webui::handle_http(mg_connection* conn, mg_request_info c
 		return true;
 	}
 
-	handle_json_rpc(response, tokens, &post_body[0], perms);
+	handle_json_rpc(response, tokens, &post_body[0]);
 
 	// we need a null terminator
 	response.push_back('\0');

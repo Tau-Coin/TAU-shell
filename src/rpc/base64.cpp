@@ -37,7 +37,7 @@ extern "C" {
 #include "rpc/cdecode.h"
 }
 
-namespace libtorrent
+namespace TauShell
 {
 
 std::string base64decode(std::string const& in)

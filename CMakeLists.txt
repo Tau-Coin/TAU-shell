@@ -26,8 +26,10 @@ target_link_libraries(main leveldb)
 #link sqlite lib
 target_link_libraries(main sqlite3)
 
-#sub
+#sub rpc
 add_subdirectory(src/rpc)
 target_link_libraries(main rpc)
 
-add_compile_options(-ldl)
+#sub handler
+add_subdirectory(src/handler)
+target_link_libraries(main handler)

@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <string>
 
-namespace libtorrent
+namespace TauShell
 {
 	std::string base64decode(std::string const& in);
 }

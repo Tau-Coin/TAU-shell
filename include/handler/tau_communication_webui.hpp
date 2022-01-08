@@ -33,16 +33,20 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef TORRENT_TRANSMISSION_WEBUI_HPP
 #define TORRENT_TRANSMISSION_WEBUI_HPP
 
-#include "webui.hpp"
+#define INT64_FMT  "I64d"
+
+#include "rpc/webui.hpp"
+#include "libTAU/session.hpp"
 
 extern "C" {
-#include "jsmn.h"
+#include "rpc/jsmn.h"
 }
 
 #include <vector>
 #include <set>
 
-namespace libTAU
+using namespace libTAU;
+namespace TauShell
 {
 	struct tau_communication_webui : http_handler
 	{
@@ -53,35 +57,34 @@ namespace libTAU
 			mg_request_info const* request_info);
 
 		//获取当前sesstion状态
-		void session_stats(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void session_stats(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 		//communication apis
-		void new_account_seed(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void new_account_seed(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 		// main loop time interval
-		void set_loop_time_interval(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void set_loop_time_interval(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 		//friends
-		void add_new_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void add_new_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
-		void delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
-		void get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
-		void set_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void set_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
-		void unset_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void unset_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
-		void update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
-		void set_active_friends(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void set_active_friends(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 		// message
-		void add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer, permissions_interface const* p);
+		void add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 	private:
 
-		void handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens, char* buffer, permissions_interface const* p);
-		void parse_ids(std::set<std::uint32_t>& torrent_ids, jsmntok_t* args, char* buffer);
+		void handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens, char* buffer);
 
 		time_t m_start_time;
 		session& m_ses;
