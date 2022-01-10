@@ -69,7 +69,8 @@ static void end_request(mg_connection const* c, int reply_status_code)
 }
 
 webui_base::webui_base()
-	: m_ctx(NULL)
+	: m_document_root(".")
+	, m_ctx(NULL)
 {}
 
 webui_base::~webui_base() {}
@@ -117,7 +118,8 @@ void webui_base::start(int port, int num_threads)
 	const char *options[20];
 	memset(options, 0, sizeof(options));
 	int i = 0;
-
+	options[i++] = "document_root";
+	options[i++] = m_document_root.c_str();
 	options[i++] = "enable_keep_alive";
 	options[i++] = "yes";
 

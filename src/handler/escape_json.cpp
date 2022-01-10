@@ -41,7 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "handler/escape_json.hpp"
 #include "libTAU/assert.hpp"
 
-namespace TauShell
+namespace libTAU
 {
 
 std::string escape_json(std::string const& input)

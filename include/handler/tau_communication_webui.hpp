@@ -46,7 +46,7 @@ extern "C" {
 #include <set>
 
 using namespace libTAU;
-namespace TauShell
+namespace libTAU
 {
 	struct tau_communication_webui : http_handler
 	{

@@ -37,7 +37,7 @@ extern "C" {
 #include "rpc/cdecode.h"
 }
 
-namespace TauShell
+namespace libTAU
 {
 
 std::string base64decode(std::string const& in)

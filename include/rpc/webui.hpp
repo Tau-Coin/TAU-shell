@@ -67,11 +67,13 @@ namespace libTAU
 			, mg_request_info const* request_info);
 		void handle_end_request(mg_connection* conn);
 	
-		int listen_port() const { return m_listen_port; }
+		void set_document_root(std::string r) { m_document_root = r; }
 
+		int listen_port() const { return m_listen_port; }
 	private:
 
 		std::vector<http_handler*> m_handlers;
+		std::string m_document_root;
 
 		mg_context* m_ctx;
 		int m_listen_port;

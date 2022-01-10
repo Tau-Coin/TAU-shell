@@ -36,7 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <stdarg.h>
 
-namespace TauShell
+namespace libTAU
 {
 	inline void appendf(std::vector<char>& target, char const* fmt, ...)
 	{

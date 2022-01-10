@@ -4,7 +4,7 @@
 #include <sqlite3.h>
 
 #include "rpc/webui.hpp"
-//#include "rpc/tau_communication_webui.hpp"
+#include "handler/tau_communication_webui.hpp"
 
 #include "libTAU/session.hpp"
 #include "libTAU/alert.hpp"
@@ -107,6 +107,7 @@ int main(int argc, char *const argv[])
 	std::cout << "save path: " << save_path << std::endl;
 	std::cout << "error log file: " << error_log << std::endl;
 	std::cout << "debug log file: " << debug_log << std::endl;
+	std::cout << "Initial CMD Parameters Over" << std::endl;
 
 	//读取device_id, account_seed
 	char device_id[32];
@@ -151,6 +152,7 @@ int main(int argc, char *const argv[])
 		//as daemon process
 		daemon(1, 0);
 	}
+	std::cout << "Initial File Parameters Over" << std::endl;
 
 	// open db for message store
 	std::string home_dir = std::filesystem::path(getenv("HOME")).string();
@@ -174,6 +176,7 @@ int main(int argc, char *const argv[])
 		fprintf(stderr, "failed to open sqlite db");
 		exit(1);
 	}
+	std::cout << "DB File Open Over" << std::endl;
 
 	// 输出debug日志
 	FILE* debug_file = NULL;
@@ -187,6 +190,8 @@ int main(int argc, char *const argv[])
 			exit(1);
 		}
 	}
+
+	std::cout << "Log File Open Over" << std::endl;
 
 	//定义session_params
 	settings_pack sp_set;
@@ -204,18 +209,21 @@ int main(int argc, char *const argv[])
 	
 	session ses(sp_param);
 	ses.set_alert_mask(~(alert::progress_notification | alert::debug_notification));	
+	std::cout << "Session parameters' setting Over" << std::endl;
+
 	//定义tau communication handle
-	//tau_communication_webui tc_handler(ses);
+	tau_communication_webui tc_handler(ses);
 
 	//定义启动webui
 	webui_base webport;
-    //webport.add_handler(&tc_handler);
+    webport.add_handler(&tc_handler);
     webport.start(rpc_port, 30);
     if (!webport.is_running())
     {
 		fprintf(stderr, "failed to start web server\n");
 		return 1;
 	}
+	std::cout << "Web UI RPC Start Over" << std::endl;
 
 	signal(SIGTERM, &sighandler);
 	signal(SIGINT, &sighandler);
@@ -232,7 +240,6 @@ int main(int argc, char *const argv[])
 		{
 			//std::cout << (*i)->message().c_str() << std::endl;
 			//std::cout << (*i)->type() << std::endl;
-			//std::cout << log_alert::alert_type << std::endl;
 			int alert_type = (*i)->type();
 			switch(alert_type){
 				case log_alert::alert_type: 
@@ -262,7 +269,6 @@ int main(int argc, char *const argv[])
 			}
 		}
 
-		/*
 		if (debug_file)
 		{
 			for (std::vector<alert*>::iterator i = alert_queue.begin()
@@ -271,7 +277,7 @@ int main(int argc, char *const argv[])
 				fprintf(debug_file, " %s\n", (*i)->message().c_str());
 			}
 		}
-		*/
+
 		if (quit && !shutting_down)
 		{
 			shutting_down = true;
@@ -281,8 +287,11 @@ int main(int argc, char *const argv[])
 		if (force_quit) break;
 		usleep(100000);
 	}
+	std::cout << "Cycle Over" << std::endl;
 
 	if (debug_file) fclose(debug_file);
+
+	std::cout << "Total Over" << std::endl;
 
 	return 0;
 }

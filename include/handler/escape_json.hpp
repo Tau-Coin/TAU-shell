@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <string>
 
-namespace TauShell
+namespace libTAU
 {
 	std::string escape_json(std::string const& in);
 }

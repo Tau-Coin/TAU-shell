@@ -54,7 +54,7 @@ extern "C" {
 
 using namespace libTAU;
 
-namespace TauShell
+namespace libTAU
 {
 
 void return_error(mg_connection* conn, char const* msg)

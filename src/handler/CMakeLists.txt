@@ -22,6 +22,8 @@ target_link_libraries(handler TAU)
 
 target_link_libraries(handler dl)
 
+target_link_libraries(handler rpc)
+
 target_link_libraries(handler pthread)
 
 target_sources(handler 
