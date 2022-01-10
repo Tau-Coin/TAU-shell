@@ -78,8 +78,9 @@ int main(int argc, char *const argv[])
 	std::string debug_log;
 
 	int ch = 0;
-	while ((ch = getopt_long(argc, argv, "c:p:d::l::r::s::e::u:", cmd_line_options, NULL)) != -1)
+	while ((ch = getopt_long(argc, argv, "c:p:d:l:r:s:e:u:", cmd_line_options, NULL)) != -1)
 	{
+		std::cout << ch << std::endl;
 		switch (ch)
 		{
 			case 'c': config_file = optarg; break;

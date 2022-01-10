@@ -89,6 +89,7 @@ void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t*
 	jsmntok_t* method = find_key(tokens, buffer, "method", JSMN_STRING);
 	if (method == NULL)
 	{
+		std::cout << "missing method in request" << std::endl;
 		return_failure(buf, "missing method in request", -1);
 		return;
 	}
@@ -99,6 +100,9 @@ void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t*
 	jsmntok_t* args = NULL;
 	for (int i = 0; i < sizeof(handlers)/sizeof(handlers[0]); ++i)
 	{
+		std::cout << "==================================" << std::endl;
+		std::cout << "Method Name: " <<  handlers[i].method_name << std::endl;
+		std::cout << "==================================" << std::endl;
 		if (strcmp(m, handlers[i].method_name)) continue;
 
 		args = find_key(tokens, buffer, "arguments", JSMN_OBJECT);
@@ -106,9 +110,10 @@ void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t*
 		handled = true;
 
 		if (args) buffer[args->end] = 0;
-		//printf("%s: %s\n", m, args ? buffer + args->start : "{}");
+		printf("%s: %s\n", m, args ? buffer + args->start : "{}");
 
 		(this->*handlers[i].fun)(buf, args, tag, buffer);
+		std::cout << "Method Over" << std::endl;
 		break;
 	}
 
@@ -122,7 +127,9 @@ char const* to_bool(bool b) { return b ? "true" : "false"; }
 void tau_communication_webui::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	// TODO: post session stats instead, and capture the performance counters
+	std::cout << "Session Stats In TAU WebUI 0" << std::endl;
 	session_status st = m_ses.status();
+	std::cout << "Session Stats In TAU WebUI 1" << std::endl;
 
 	appendf(buf, "{ \"result\": \"success\", \"tag\": %" "I64d" ", "
 		"\"arguments\": { "
@@ -151,6 +158,7 @@ void tau_communication_webui::session_stats(std::vector<char>& buf, jsmntok_t* a
 		, st.total_payload_download
 		, 1
 		, time(nullptr) - m_start_time);
+	std::cout << "Session Stats In TAU WebUI 2" << std::endl;
 }
 
 //communication apis
@@ -217,10 +225,9 @@ tau_communication_webui::~tau_communication_webui() {}
 
 bool tau_communication_webui::handle_http(mg_connection* conn, mg_request_info const* request_info)
 {
+	std::cout << "==============Incoming HTTP ==============" << std::endl;
 	// we only provide access to paths under /web and /upload
-	if (strcmp(request_info->uri, "/transmission/rpc")
-		&& strcmp(request_info->uri, "/rpc")
-		&& strcmp(request_info->uri, "/upload"))
+	if (strcmp(request_info->uri, "/rpc"))
 		return false;
 
 	char const* cl = mg_get_header(conn, "content-length");
@@ -237,13 +244,15 @@ bool tau_communication_webui::handle_http(mg_connection* conn, mg_request_info c
 		}
 	}
 
-//	printf("REQUEST: %s%s%s\n", request_info->uri
-//		, request_info->query_string ? "?" : ""
-//		, request_info->query_string ? request_info->query_string : "");
+	printf("REQUEST: %s%s%s\n", request_info->uri
+		, request_info->query_string ? "?" : ""
+		, request_info->query_string ? request_info->query_string : "");
 
+	std::cout << "0" << std::endl;
 	std::vector<char> response;
 	if (post_body.empty())
 	{
+		std::cout << "00" << std::endl;
 		return_error(conn, "request with no POST body");
 		return true;
 	}
@@ -251,30 +260,37 @@ bool tau_communication_webui::handle_http(mg_connection* conn, mg_request_info c
 	jsmn_parser p;
 	jsmn_init(&p);
 
+	std::cout << "1" << std::endl;
 	int r = jsmn_parse(&p, &post_body[0], tokens, sizeof(tokens)/sizeof(tokens[0]));
 	if (r == JSMN_ERROR_INVAL)
 	{
+		std::cout << "11" << std::endl;
 		return_error(conn, "request not JSON");
 		return true;
 	}
 	else if (r == JSMN_ERROR_NOMEM)
 	{
+		std::cout << "12" << std::endl;
 		return_error(conn, "request too big");
 		return true;
 	}
 	else if (r == JSMN_ERROR_PART)
 	{
+		std::cout << "13" << std::endl;
 		return_error(conn, "request truncated");
 		return true;
 	}
 	else if (r != JSMN_SUCCESS)
 	{
+		std::cout << "14" << std::endl;
 		return_error(conn, "invalid request");
 		return true;
 	}
 
+	std::cout << "2" << std::endl;
 	handle_json_rpc(response, tokens, &post_body[0]);
 
+	std::cout << "3" << std::endl;
 	// we need a null terminator
 	response.push_back('\0');
 	// subtract one from content-length
@@ -283,7 +299,7 @@ bool tau_communication_webui::handle_http(mg_connection* conn, mg_request_info c
 		"Content-Type: text/json\r\n"
 		"Content-Length: %d\r\n\r\n", int(response.size()) - 1);
 	mg_write(conn, &response[0], response.size());
-//	printf("%s\n", &response[0]);
+	printf("%s\n", &response[0]);
 	return true;
 }
 
