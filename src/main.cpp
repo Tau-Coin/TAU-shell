@@ -240,7 +240,7 @@ int main(int argc, char *const argv[])
 			, end(alert_queue.end()); i != end; ++i)
 		{
 			//std::cout << (*i)->message().c_str() << std::endl;
-			//std::cout << (*i)->type() << std::endl;
+			//std::cout << (*i)->type() <<  " " << log_alert::alert_type << std::endl;
 			int alert_type = (*i)->type();
 			switch(alert_type){
 				case log_alert::alert_type: 
@@ -267,15 +267,9 @@ int main(int argc, char *const argv[])
 				case communication_last_seen_alert::alert_type:
 					//on_last_seen(*i, db);
 					break;
-			}
-		}
-
-		if (debug_file)
-		{
-			for (std::vector<alert*>::iterator i = alert_queue.begin()
-				, end(alert_queue.end()); i != end; ++i)
-			{
-				fprintf(debug_file, " %s\n", (*i)->message().c_str());
+				case communication_log_alert::alert_type:
+					fprintf(debug_file, " %s\n", (*i)->message().c_str());
+					break;
 			}
 		}
 

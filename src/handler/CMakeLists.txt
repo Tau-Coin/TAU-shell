@@ -29,5 +29,6 @@ target_link_libraries(handler pthread)
 target_sources(handler 
   PRIVATE
 	tau_communication_webui
+	hex_util	
 	escape_json	
 )

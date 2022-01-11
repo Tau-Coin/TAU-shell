@@ -61,6 +61,7 @@ namespace libTAU
 
 		//communication apis
 		void new_account_seed(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
 		// main loop time interval
 		void set_loop_time_interval(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
@@ -71,13 +72,7 @@ namespace libTAU
 
 		void get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
-		void set_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
-
-		void unset_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
-
 		void update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
-
-		void set_active_friends(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 		// message
 		void add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);

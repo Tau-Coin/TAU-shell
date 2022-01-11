@@ -30,6 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
+#include "handler/hex_util.hpp"
+#include "handler/tau.hpp"
 #include "handler/tau_communication_webui.hpp"
 #include "rpc/json_util.hpp"
 #include "rpc/base64.hpp"
@@ -81,6 +83,12 @@ struct method_handler
 static method_handler handlers[] =
 {
 	{"session-stats", &tau_communication_webui::session_stats},
+	{"set-loop-time-interval", &tau_communication_webui::set_loop_time_interval},
+	{"add-new-friend", &tau_communication_webui::add_new_friend},
+	{"update-friend-info", &tau_communication_webui::update_friend_info},
+	{"get-friend-info", &tau_communication_webui::get_friend_info},
+	{"delete-friend", &tau_communication_webui::delete_friend},
+	{"add-new-message", &tau_communication_webui::add_new_message},
 };
 
 void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
@@ -158,7 +166,6 @@ void tau_communication_webui::session_stats(std::vector<char>& buf, jsmntok_t* a
 		, st.total_payload_download
 		, 1
 		, time(nullptr) - m_start_time);
-	std::cout << "Session Stats In TAU WebUI 2" << std::endl;
 }
 
 //communication apis
@@ -170,49 +177,70 @@ void tau_communication_webui::new_account_seed(std::vector<char>&, jsmntok_t* ar
 // main loop time interval
 void tau_communication_webui::set_loop_time_interval(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-
+	jsmntok_t* ti = find_key(args, buffer, "time-interval", JSMN_PRIMITIVE);
+	int time_interval = atoi(buffer + ti->start);
+	std::cout << "Set Time Interval: " << time_interval << std::endl;
+	m_ses.set_loop_time_interval(time_interval);
 }
 
 //friends
 void tau_communication_webui::add_new_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-
+	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
+	buffer[f->end] = 0;
+	char const* friend_pubkey_hex_char = &buffer[f->start];
+	char* friend_pubkey_char = new char[KEY_LEN];
+	hex_char_to_bytes_char(friend_pubkey_hex_char, friend_pubkey_char, KEY_HEX_LEN);
+	dht::public_key friend_pubkey(friend_pubkey_char);
+	m_ses.add_new_friend(friend_pubkey);
 }
 
 void tau_communication_webui::delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-
+	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
+	buffer[f->end] = 0;
+	char const* friend_pubkey_hex_char = &buffer[f->start];
+	char* friend_pubkey_char = new char[KEY_LEN];
+	hex_char_to_bytes_char(friend_pubkey_hex_char, friend_pubkey_char, KEY_HEX_LEN);
+	dht::public_key friend_pubkey(friend_pubkey_char);
+	m_ses.delete_friend(friend_pubkey);
 }
 
 void tau_communication_webui::get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-
-}
-
-void tau_communication_webui::set_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
-{
-
-}
-
-void tau_communication_webui::unset_chatting_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
-{
-
+	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
+	buffer[f->end] = 0;
+	char const* friend_pubkey_hex_char = &buffer[f->start];
+	char* friend_pubkey_char = new char[KEY_LEN];
+	hex_char_to_bytes_char(friend_pubkey_hex_char, friend_pubkey_char, KEY_HEX_LEN);
+	dht::public_key friend_pubkey(friend_pubkey_char);
+	std::vector<char> info = m_ses.get_friend_info(friend_pubkey);
+	std::cout << "Friend Info: " << info.data() << std::endl;
 }
 
 void tau_communication_webui::update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
+	jsmntok_t* i = find_key(args, buffer, "info", JSMN_STRING);
 
-}
+	//friend
+	buffer[f->end] = 0;
+	char const* friend_pubkey_hex_char = &buffer[f->start];
+	char* friend_pubkey_char = new char[KEY_LEN];
+	hex_char_to_bytes_char(friend_pubkey_hex_char, friend_pubkey_char, KEY_HEX_LEN);
+	dht::public_key friend_pubkey(friend_pubkey_char);
 
-void tau_communication_webui::set_active_friends(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
-{
+	//info
+	std::vector<char> friend_info;
+	friend_info.insert(friend_info.end(), &buffer[i->start], &buffer[i->end]);
 
+	bool flag = m_ses.update_friend_info(friend_pubkey, friend_info);
 }
 
 // message
-void add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_communication_webui::add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-
+	jsmntok_t* m = find_key(args, buffer, "msg", JSMN_STRING);
 }
 
 tau_communication_webui::tau_communication_webui(session& s)
@@ -248,11 +276,9 @@ bool tau_communication_webui::handle_http(mg_connection* conn, mg_request_info c
 		, request_info->query_string ? "?" : ""
 		, request_info->query_string ? request_info->query_string : "");
 
-	std::cout << "0" << std::endl;
 	std::vector<char> response;
 	if (post_body.empty())
 	{
-		std::cout << "00" << std::endl;
 		return_error(conn, "request with no POST body");
 		return true;
 	}
@@ -260,37 +286,30 @@ bool tau_communication_webui::handle_http(mg_connection* conn, mg_request_info c
 	jsmn_parser p;
 	jsmn_init(&p);
 
-	std::cout << "1" << std::endl;
 	int r = jsmn_parse(&p, &post_body[0], tokens, sizeof(tokens)/sizeof(tokens[0]));
 	if (r == JSMN_ERROR_INVAL)
 	{
-		std::cout << "11" << std::endl;
 		return_error(conn, "request not JSON");
 		return true;
 	}
 	else if (r == JSMN_ERROR_NOMEM)
 	{
-		std::cout << "12" << std::endl;
 		return_error(conn, "request too big");
 		return true;
 	}
 	else if (r == JSMN_ERROR_PART)
 	{
-		std::cout << "13" << std::endl;
 		return_error(conn, "request truncated");
 		return true;
 	}
 	else if (r != JSMN_SUCCESS)
 	{
-		std::cout << "14" << std::endl;
 		return_error(conn, "invalid request");
 		return true;
 	}
 
-	std::cout << "2" << std::endl;
 	handle_json_rpc(response, tokens, &post_body[0]);
 
-	std::cout << "3" << std::endl;
 	// we need a null terminator
 	response.push_back('\0');
 	// subtract one from content-length
