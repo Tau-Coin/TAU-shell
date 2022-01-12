@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project(handler)
 
 set(CMAKE_CXX_FLAGS "-std=c++17")
@@ -21,6 +21,8 @@ link_directories("/home/cowtc/data/libTAU-build/boost/lib" "/home/cowtc/data/lib
 target_link_libraries(handler TAU)
 
 target_link_libraries(handler dl)
+
+target_link_libraries(handler iconv)
 
 target_link_libraries(handler rpc)
 

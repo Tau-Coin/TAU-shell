@@ -76,22 +76,22 @@ void return_failure(std::vector<char>& buf, char const* msg, std::int64_t tag)
 struct method_handler
 {
 	char const* method_name;
-	void (tau_communication_webui::*fun)(std::vector<char>&, jsmntok_t* args, std::int64_t tag
+	void (tau_handler::*fun)(std::vector<char>&, jsmntok_t* args, std::int64_t tag
 		, char* buffer);
 };
 
 static method_handler handlers[] =
 {
-	{"session-stats", &tau_communication_webui::session_stats},
-	{"set-loop-time-interval", &tau_communication_webui::set_loop_time_interval},
-	{"add-new-friend", &tau_communication_webui::add_new_friend},
-	{"update-friend-info", &tau_communication_webui::update_friend_info},
-	{"get-friend-info", &tau_communication_webui::get_friend_info},
-	{"delete-friend", &tau_communication_webui::delete_friend},
-	{"add-new-message", &tau_communication_webui::add_new_message},
+	{"session-stats", &tau_handler::session_stats},
+	{"set-loop-time-interval", &tau_handler::set_loop_time_interval},
+	{"add-new-friend", &tau_handler::add_new_friend},
+	{"update-friend-info", &tau_handler::update_friend_info},
+	{"get-friend-info", &tau_handler::get_friend_info},
+	{"delete-friend", &tau_handler::delete_friend},
+	{"add-new-message", &tau_handler::add_new_message},
 };
 
-void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
+void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
 {
 	// we expect a "method" in the top level
 	jsmntok_t* method = find_key(tokens, buffer, "method", JSMN_STRING);
@@ -132,7 +132,7 @@ void tau_communication_webui::handle_json_rpc(std::vector<char>& buf, jsmntok_t*
 
 char const* to_bool(bool b) { return b ? "true" : "false"; }
 
-void tau_communication_webui::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	// TODO: post session stats instead, and capture the performance counters
 	std::cout << "Session Stats In TAU WebUI 0" << std::endl;
@@ -169,13 +169,13 @@ void tau_communication_webui::session_stats(std::vector<char>& buf, jsmntok_t* a
 }
 
 //communication apis
-void tau_communication_webui::new_account_seed(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::new_account_seed(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
 // main loop time interval
-void tau_communication_webui::set_loop_time_interval(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::set_loop_time_interval(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* ti = find_key(args, buffer, "time-interval", JSMN_PRIMITIVE);
 	int time_interval = atoi(buffer + ti->start);
@@ -184,7 +184,7 @@ void tau_communication_webui::set_loop_time_interval(std::vector<char>&, jsmntok
 }
 
 //friends
-void tau_communication_webui::add_new_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::add_new_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
 	buffer[f->end] = 0;
@@ -195,7 +195,7 @@ void tau_communication_webui::add_new_friend(std::vector<char>&, jsmntok_t* args
 	m_ses.add_new_friend(friend_pubkey);
 }
 
-void tau_communication_webui::delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
 	buffer[f->end] = 0;
@@ -206,7 +206,7 @@ void tau_communication_webui::delete_friend(std::vector<char>&, jsmntok_t* args,
 	m_ses.delete_friend(friend_pubkey);
 }
 
-void tau_communication_webui::get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
 	buffer[f->end] = 0;
@@ -218,7 +218,7 @@ void tau_communication_webui::get_friend_info(std::vector<char>&, jsmntok_t* arg
 	std::cout << "Friend Info: " << info.data() << std::endl;
 }
 
-void tau_communication_webui::update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
 	jsmntok_t* i = find_key(args, buffer, "info", JSMN_STRING);
@@ -238,61 +238,61 @@ void tau_communication_webui::update_friend_info(std::vector<char>&, jsmntok_t* 
 }
 
 // message
-void tau_communication_webui::add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* m = find_key(args, buffer, "msg", JSMN_STRING);
 }
 
 //blockchain
-void tau_communication_webui::create_chain_id(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::create_chain_id(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-void tau_communication_webui::create_new_community(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::create_new_community(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-void tau_communication_webui::follow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::follow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-void tau_communication_webui::unfollow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::unfollow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-void tau_communication_webui::submit_transaction(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::submit_transaction(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-void tau_communication_webui::get_account_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_account_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-void tau_communication_webui::get_top_tip_block(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_top_tip_block(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-void tau_communication_webui::get_median_tx_fee(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_median_tx_fee(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-void tau_communication_webui::get_block_by_number(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_block_by_number(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-void tau_communication_webui::get_block_by_hash(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_block_by_hash(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 }
 
-tau_communication_webui::tau_communication_webui(session& s)
+tau_handler::tau_handler(session& s)
 	: m_ses(s)
 {
 
 }
 
-tau_communication_webui::~tau_communication_webui() {}
+tau_handler::~tau_handler() {}
 
-bool tau_communication_webui::handle_http(mg_connection* conn, mg_request_info const* request_info)
+bool tau_handler::handle_http(mg_connection* conn, mg_request_info const* request_info)
 {
 	std::cout << "==============Incoming HTTP ==============" << std::endl;
 	// we only provide access to paths under /web and /upload

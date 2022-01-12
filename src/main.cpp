@@ -213,11 +213,11 @@ int main(int argc, char *const argv[])
 	std::cout << "Session parameters' setting Over" << std::endl;
 
 	//定义tau communication handle
-	tau_communication_webui tc_handler(ses);
+	tau_handler t_handler(ses);
 
 	//定义启动webui
 	webui_base webport;
-    webport.add_handler(&tc_handler);
+    webport.add_handler(&t_handler);
     webport.start(rpc_port, 30);
     if (!webport.is_running())
     {

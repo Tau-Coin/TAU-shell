@@ -48,10 +48,10 @@ extern "C" {
 using namespace libTAU;
 namespace libTAU
 {
-	struct tau_communication_webui : http_handler
+	struct tau_handler : http_handler
 	{
-		tau_communication_webui(session& s);
-		~tau_communication_webui();
+		tau_handler(session& s);
+		~tau_handler();
 
 		virtual bool handle_http(mg_connection* conn,
 			mg_request_info const* request_info);
@@ -76,6 +76,27 @@ namespace libTAU
 
 		// message
 		void add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		//blockchain
+		void create_chain_id(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void create_new_community(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void follow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void unfollow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void submit_transaction(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void get_account_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void get_top_tip_block(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void get_median_tx_fee(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void get_block_by_number(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void get_block_by_hash(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 	private:
 
