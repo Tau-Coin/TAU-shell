@@ -31,8 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "handler/hex_util.hpp"
-#include "handler/tau.hpp"
-#include "handler/tau_communication_webui.hpp"
+#include "handler/tau_constants.hpp"
+#include "handler/tau_handler.hpp"
 #include "rpc/json_util.hpp"
 #include "rpc/base64.hpp"
 
@@ -241,6 +241,47 @@ void tau_communication_webui::update_friend_info(std::vector<char>&, jsmntok_t* 
 void tau_communication_webui::add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* m = find_key(args, buffer, "msg", JSMN_STRING);
+}
+
+//blockchain
+void tau_communication_webui::create_chain_id(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+}
+
+void tau_communication_webui::create_new_community(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+}
+
+void tau_communication_webui::follow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+}
+
+void tau_communication_webui::unfollow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+}
+
+void tau_communication_webui::submit_transaction(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+}
+
+void tau_communication_webui::get_account_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+}
+
+void tau_communication_webui::get_top_tip_block(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+}
+
+void tau_communication_webui::get_median_tx_fee(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+}
+
+void tau_communication_webui::get_block_by_number(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+}
+
+void tau_communication_webui::get_block_by_hash(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
 }
 
 tau_communication_webui::tau_communication_webui(session& s)

@@ -4,7 +4,7 @@
 #include <sqlite3.h>
 
 #include "rpc/webui.hpp"
-#include "handler/tau_communication_webui.hpp"
+#include "handler/tau_handler.hpp"
 
 #include "libTAU/session.hpp"
 #include "libTAU/alert.hpp"
