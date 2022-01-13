@@ -46,6 +46,7 @@ namespace libTAU {
 
 jsmntok_t* skip_item(jsmntok_t* i);
 jsmntok_t* find_key(jsmntok_t* tokens, char* buf, char const* key, int type);
+jsmntok_t* find_key_in_array(jsmntok_t* tokens, char* buf, char const* key, int s, int num_keys, int type);
 char const* find_string(jsmntok_t* tokens, char* buf, char const* key, bool* found = NULL);
 std::int64_t find_int(jsmntok_t* tokens, char* buf, char const* key, bool* found = NULL);
 bool find_bool(jsmntok_t* tokens, char* buf, char const* key);

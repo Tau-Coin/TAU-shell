@@ -61,6 +61,10 @@ namespace libTAU {
 			std::cout << i << "1: " << tokens[i].start  << std::endl;
 			std::cout << i << "2: " << tokens[i].end  << std::endl;
 			std::cout << i << "3: " << tokens[i].size  << std::endl;
+			int size = tokens[i].end - tokens[i].start + 1;
+			char *temp = new char[size];
+			memcpy(temp, &sql_info[tokens[i].start], size);
+			std::cout << temp << std::endl;
 			std::cout << "=====================================" << std::endl << std::endl;
 		}
 
@@ -78,8 +82,6 @@ namespace libTAU {
 		std::cout << "Table size : " << tables->size << std::endl;
 
 		for(int i = 0; i < tables->size; i++) {
-			jsmntok_t* tableName = find_key(tables, &sql_info[0], "tableName", JSMN_ARRAY);
-			std::cout << "Table Name : " << tableName->end << " "  << tableName->start<< std::endl;
 		}
 		
 	}

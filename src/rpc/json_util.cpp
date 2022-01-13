@@ -51,6 +51,21 @@ jsmntok_t* skip_item(jsmntok_t* i)
 	return i;
 }
 
+jsmntok_t* find_key_in_array(jsmntok_t* tokens, char* buf, char const* key, int s, int num_keys, int type)
+{
+	// we skip two items at a time, first the key then the value
+	for (jsmntok_t* i = &tokens[1]; num_keys > 0; i = skip_item(skip_item(i)), --num_keys)
+	{
+		buf[i->end] = 0;
+		if (strcmp(key, buf + i->start)) continue;
+		if (i[1].type != type) continue;
+		if(0 == s)
+			return i + 1;
+		s--;
+	}
+	return NULL;
+}
+
 jsmntok_t* find_key(jsmntok_t* tokens, char* buf, char const* key, int type)
 {
 	if (tokens[0].type != JSMN_OBJECT) return NULL;
