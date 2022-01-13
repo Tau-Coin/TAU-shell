@@ -4,6 +4,7 @@
 #include <sqlite3.h>
 
 #include "rpc/webui.hpp"
+#include "handler/db_util.hpp"
 #include "handler/tau_handler.hpp"
 
 #include "libTAU/session.hpp"
@@ -37,6 +38,7 @@ struct option cmd_line_options[] =
 	{"config",            required_argument,   NULL, 'c'},
 	{"pid",               required_argument,   NULL, 'p'},
 	{"daemonize",         no_argument,         NULL, 'd'},
+	{"initial",        	  no_argument,   	   NULL, 'i'},
 	{"listen-port",       required_argument,   NULL, 'l'},
 	{"rpc-port",          required_argument,   NULL, 'r'},
 	{"save-dir",          required_argument,   NULL, 's'},
@@ -52,6 +54,7 @@ void print_usage()
 		"-c, --config           <config filename>\n"
 		"-p, --pid              <pid-filename>\n"
 		"-d, --daemonize\n"
+		"-i, --initial\n"
 		"-l, --listen-port      <libTAU listen port>\n"
 		"-r, --rpc-port         <rpc listen port>\n"
 		"-s, --save-dir         <download directory>\n"
@@ -68,6 +71,7 @@ int main(int argc, char *const argv[])
 	// and storage
 
 	bool daemonize = false;
+	bool initial = false;
 	int listen_port = 6881;
 	int rpc_port = 8080;
 
@@ -78,7 +82,7 @@ int main(int argc, char *const argv[])
 	std::string debug_log;
 
 	int ch = 0;
-	while ((ch = getopt_long(argc, argv, "c:p:d:l:r:s:e:u:", cmd_line_options, NULL)) != -1)
+	while ((ch = getopt_long(argc, argv, "c:p:d:i:l:r:s:e:u:", cmd_line_options, NULL)) != -1)
 	{
 		std::cout << ch << std::endl;
 		switch (ch)
@@ -86,6 +90,7 @@ int main(int argc, char *const argv[])
 			case 'c': config_file = optarg; break;
 			case 'p': pid_file = optarg; break;
 			case 'd': daemonize = true; break;
+			case 'i': initial = true; break;
 			case 'l': listen_port = atoi(optarg); break;
 			case 'r': rpc_port = atoi(optarg); break;
 			case 's': save_path = optarg; break;
@@ -177,6 +182,13 @@ int main(int argc, char *const argv[])
 		fprintf(stderr, "failed to open sqlite db");
 		exit(1);
 	}
+
+	// initial sqlite3
+	if(initial) {
+		sqlite_db_initial();		
+		std::cout << "Sqlite3 DB initial success" << std::endl;
+	}
+
 	std::cout << "DB File Open Over" << std::endl;
 
 	// 输出debug日志

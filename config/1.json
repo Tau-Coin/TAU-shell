@@ -1,0 +1,750 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "7d7f3b586833e732714d70c71adb257b",
+    "entities": [
+      {
+        "tableName": "Communities",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`chainID` TEXT NOT NULL, `communityName` TEXT NOT NULL, `headBlock` INTEGER NOT NULL, `tailBlock` INTEGER NOT NULL, `consensusBlock` INTEGER NOT NULL, `isBanned` INTEGER NOT NULL, `forkPoint` TEXT, `topConsensus` TEXT, PRIMARY KEY(`chainID`))",
+        "fields": [
+          {
+            "fieldPath": "chainID",
+            "columnName": "chainID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "communityName",
+            "columnName": "communityName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "headBlock",
+            "columnName": "headBlock",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tailBlock",
+            "columnName": "tailBlock",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "consensusBlock",
+            "columnName": "consensusBlock",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isBanned",
+            "columnName": "isBanned",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "forkPoint",
+            "columnName": "forkPoint",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "topConsensus",
+            "columnName": "topConsensus",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "chainID"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Members",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`chainID` TEXT NOT NULL, `publicKey` TEXT NOT NULL, `balance` INTEGER NOT NULL, `power` INTEGER NOT NULL, `nonce` INTEGER NOT NULL, `blockNumber` INTEGER NOT NULL, PRIMARY KEY(`chainID`, `publicKey`))",
+        "fields": [
+          {
+            "fieldPath": "chainID",
+            "columnName": "chainID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicKey",
+            "columnName": "publicKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "balance",
+            "columnName": "balance",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "power",
+            "columnName": "power",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nonce",
+            "columnName": "nonce",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockNumber",
+            "columnName": "blockNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "chainID",
+            "publicKey"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Users",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicKey` TEXT NOT NULL, `seed` TEXT, `remark` TEXT, `nickname` TEXT, `updateNNTime` INTEGER NOT NULL, `longitude` REAL NOT NULL, `latitude` REAL NOT NULL, `updateLocationTime` INTEGER NOT NULL, `headPic` BLOB, `updateHPTime` INTEGER NOT NULL, `isCurrentUser` INTEGER NOT NULL, `isBanned` INTEGER NOT NULL, PRIMARY KEY(`publicKey`))",
+        "fields": [
+          {
+            "fieldPath": "publicKey",
+            "columnName": "publicKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seed",
+            "columnName": "seed",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "remark",
+            "columnName": "remark",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "nickname",
+            "columnName": "nickname",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updateNNTime",
+            "columnName": "updateNNTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updateLocationTime",
+            "columnName": "updateLocationTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "headPic",
+            "columnName": "headPic",
+            "affinity": "BLOB",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updateHPTime",
+            "columnName": "updateHPTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCurrentUser",
+            "columnName": "isCurrentUser",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isBanned",
+            "columnName": "isBanned",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "publicKey"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Txs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`txID` TEXT NOT NULL, `chainID` TEXT NOT NULL, `senderPk` TEXT NOT NULL, `fee` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, `nonce` INTEGER NOT NULL, `txType` INTEGER NOT NULL, `memo` TEXT, `txStatus` INTEGER NOT NULL, `blockNumber` INTEGER NOT NULL, `receiverPk` TEXT, `amount` INTEGER NOT NULL, `autoRenewal` INTEGER NOT NULL, `coinName` TEXT, `link` TEXT, `location` TEXT, PRIMARY KEY(`txID`))",
+        "fields": [
+          {
+            "fieldPath": "txID",
+            "columnName": "txID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chainID",
+            "columnName": "chainID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "senderPk",
+            "columnName": "senderPk",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fee",
+            "columnName": "fee",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nonce",
+            "columnName": "nonce",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "txType",
+            "columnName": "txType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "memo",
+            "columnName": "memo",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "txStatus",
+            "columnName": "txStatus",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockNumber",
+            "columnName": "blockNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receiverPk",
+            "columnName": "receiverPk",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoRenewal",
+            "columnName": "autoRenewal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coinName",
+            "columnName": "coinName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "link",
+            "columnName": "link",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "location",
+            "columnName": "location",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "txID"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Blocks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`chainID` TEXT NOT NULL, `blockHash` TEXT NOT NULL, `blockNumber` INTEGER NOT NULL, `miner` TEXT NOT NULL, `rewards` INTEGER NOT NULL, `difficulty` INTEGER NOT NULL, `status` INTEGER NOT NULL, PRIMARY KEY(`chainID`, `blockHash`))",
+        "fields": [
+          {
+            "fieldPath": "chainID",
+            "columnName": "chainID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockHash",
+            "columnName": "blockHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockNumber",
+            "columnName": "blockNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "miner",
+            "columnName": "miner",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rewards",
+            "columnName": "rewards",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "difficulty",
+            "columnName": "difficulty",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "chainID",
+            "blockHash"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Favorites",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ID` TEXT NOT NULL, `chainID` TEXT NOT NULL, `senderPk` TEXT NOT NULL, `fee` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, `type` INTEGER NOT NULL, `memo` TEXT, `receiverPk` TEXT, `amount` INTEGER NOT NULL, PRIMARY KEY(`ID`))",
+        "fields": [
+          {
+            "fieldPath": "ID",
+            "columnName": "ID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chainID",
+            "columnName": "chainID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "senderPk",
+            "columnName": "senderPk",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fee",
+            "columnName": "fee",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "memo",
+            "columnName": "memo",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "receiverPk",
+            "columnName": "receiverPk",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "ID"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Notifications",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`senderPk` TEXT NOT NULL, `chainID` TEXT NOT NULL, `chainLink` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `isRead` INTEGER NOT NULL, PRIMARY KEY(`senderPk`, `chainID`))",
+        "fields": [
+          {
+            "fieldPath": "senderPk",
+            "columnName": "senderPk",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chainID",
+            "columnName": "chainID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chainLink",
+            "columnName": "chainLink",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRead",
+            "columnName": "isRead",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "senderPk",
+            "chainID"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Friends",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`userPK` TEXT NOT NULL, `friendPK` TEXT NOT NULL, `lastCommTime` INTEGER NOT NULL, `lastSeenTime` INTEGER NOT NULL, `status` INTEGER NOT NULL, `msgUnread` INTEGER NOT NULL, `onlineCount` INTEGER NOT NULL, PRIMARY KEY(`userPK`, `friendPK`))",
+        "fields": [
+          {
+            "fieldPath": "userPK",
+            "columnName": "userPK",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "friendPK",
+            "columnName": "friendPK",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastCommTime",
+            "columnName": "lastCommTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenTime",
+            "columnName": "lastSeenTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "msgUnread",
+            "columnName": "msgUnread",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "onlineCount",
+            "columnName": "onlineCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "userPK",
+            "friendPK"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ChatMessages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`hash` TEXT NOT NULL, `senderPk` TEXT NOT NULL, `receiverPk` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `contentType` INTEGER NOT NULL, `logicMsgHash` TEXT NOT NULL, `unsent` INTEGER NOT NULL, `content` BLOB, PRIMARY KEY(`hash`))",
+        "fields": [
+          {
+            "fieldPath": "hash",
+            "columnName": "hash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "senderPk",
+            "columnName": "senderPk",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receiverPk",
+            "columnName": "receiverPk",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentType",
+            "columnName": "contentType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "logicMsgHash",
+            "columnName": "logicMsgHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unsent",
+            "columnName": "unsent",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "BLOB",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "hash"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [
+          {
+            "name": "index_ChatMessages_timestamp_logicMsgHash",
+            "unique": false,
+            "columnNames": [
+              "timestamp",
+              "logicMsgHash"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ChatMessages_timestamp_logicMsgHash` ON `${TABLE_NAME}` (`timestamp`, `logicMsgHash`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ChatMsgLogs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`hash` TEXT NOT NULL, `status` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`hash`, `status`))",
+        "fields": [
+          {
+            "fieldPath": "hash",
+            "columnName": "hash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "hash",
+            "status"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Devices",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`userPK` TEXT NOT NULL, `deviceID` TEXT NOT NULL, `loginTime` INTEGER NOT NULL, PRIMARY KEY(`userPK`, `deviceID`))",
+        "fields": [
+          {
+            "fieldPath": "userPK",
+            "columnName": "userPK",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceID",
+            "columnName": "deviceID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loginTime",
+            "columnName": "loginTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "userPK",
+            "deviceID"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Statistics",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`timestamp` INTEGER NOT NULL, `dataSize` INTEGER NOT NULL, `isMetered` INTEGER NOT NULL, `memorySize` INTEGER NOT NULL, `cpuUsageRate` REAL NOT NULL, `workingFrequency` REAL NOT NULL, `nodes` INTEGER NOT NULL, `invokedRequests` INTEGER NOT NULL, PRIMARY KEY(`timestamp`))",
+        "fields": [
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataSize",
+            "columnName": "dataSize",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isMetered",
+            "columnName": "isMetered",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "memorySize",
+            "columnName": "memorySize",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cpuUsageRate",
+            "columnName": "cpuUsageRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workingFrequency",
+            "columnName": "workingFrequency",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nodes",
+            "columnName": "nodes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "invokedRequests",
+            "columnName": "invokedRequests",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "timestamp"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7d7f3b586833e732714d70c71adb257b')"
+    ]
+  }
+}
