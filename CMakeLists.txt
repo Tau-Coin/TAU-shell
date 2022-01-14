@@ -9,9 +9,9 @@ add_definitions(-D TORRENT_USE_OPENSSL)
 
 add_definitions(-D TORRENT_USE_LIBCRYPTO)
 
-include_directories("/home/cowtc/data/libTAU-build/openssl/include" "/home/cowtc/data/libTAU-build/boost" "/home/cowtc/data/libTAU-build/leveldb/include" "/home/cowtc/data/libTAU-build/sqlite/include" "/usr/local/include")
+include_directories("/home/cowtc/data/libTAU-build/openssl/include" "/home/cowtc/data/libTAU-build/boost" "/home/cowtc/data/libTAU-build/sqlite/include" "/usr/local/include")
 
-link_directories("/home/cowtc/data/libTAU-build/boost/lib" "/home/cowtc/data/libTAU-build/openssl/lib" "/home/cowtc/data/libTAU-build/leveldb/lib" "/home/cowtc/data/libTAU-build/sqlite/lib" "/usr/local/lib")
+link_directories("/home/cowtc/data/libTAU-build/boost/lib" "/home/cowtc/data/libTAU-build/openssl/lib" "/home/cowtc/data/libTAU-build/sqlite/lib" "/usr/local/lib")
 
 include_directories(include)
 
@@ -19,12 +19,6 @@ add_executable(main src/main.cpp)
 
 #link tau lib
 target_link_libraries(main TAU)
-
-#link leveldb lib
-target_link_libraries(main leveldb)
-
-#link sqlite lib
-target_link_libraries(main sqlite3)
 
 #sub rpc
 add_subdirectory(src/rpc)

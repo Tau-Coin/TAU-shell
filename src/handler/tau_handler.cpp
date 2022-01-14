@@ -193,6 +193,9 @@ void tau_handler::add_new_friend(std::vector<char>&, jsmntok_t* args, std::int64
 	hex_char_to_bytes_char(friend_pubkey_hex_char, friend_pubkey_char, KEY_HEX_LEN);
 	dht::public_key friend_pubkey(friend_pubkey_char);
 	m_ses.add_new_friend(friend_pubkey);
+
+	//add in db
+	m_sqldb->db_add_new_friend(friend_pubkey_char);
 }
 
 void tau_handler::delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
@@ -204,6 +207,9 @@ void tau_handler::delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_
 	hex_char_to_bytes_char(friend_pubkey_hex_char, friend_pubkey_char, KEY_HEX_LEN);
 	dht::public_key friend_pubkey(friend_pubkey_char);
 	m_ses.delete_friend(friend_pubkey);
+
+	//delete in db
+	m_sqldb->db_delete_friend(friend_pubkey_char);
 }
 
 void tau_handler::get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
@@ -216,6 +222,9 @@ void tau_handler::get_friend_info(std::vector<char>&, jsmntok_t* args, std::int6
 	dht::public_key friend_pubkey(friend_pubkey_char);
 	std::vector<char> info = m_ses.get_friend_info(friend_pubkey);
 	std::cout << "Friend Info: " << info.data() << std::endl;
+	
+	//insert friend info
+	m_sqldb->db_insert_friend_info();
 }
 
 void tau_handler::update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
@@ -235,12 +244,18 @@ void tau_handler::update_friend_info(std::vector<char>&, jsmntok_t* args, std::i
 	friend_info.insert(friend_info.end(), &buffer[i->start], &buffer[i->end]);
 
 	bool flag = m_ses.update_friend_info(friend_pubkey, friend_info);
+
+	//insert friend info
+	m_sqldb->db_update_friend_info();
 }
 
 // message
 void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* m = find_key(args, buffer, "msg", JSMN_STRING);
+
+	//insert friend info
+	m_sqldb->db_add_new_message();
 }
 
 //blockchain
@@ -284,8 +299,9 @@ void tau_handler::get_block_by_hash(std::vector<char>&, jsmntok_t* args, std::in
 {
 }
 
-tau_handler::tau_handler(session& s)
+tau_handler::tau_handler(session& s, tau_shell_sql* sqldb)
 	: m_ses(s)
+	, m_sqldb(sqldb)
 {
 
 }

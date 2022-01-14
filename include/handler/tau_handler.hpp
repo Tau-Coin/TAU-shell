@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define INT64_FMT  "I64d"
 
+#include "handler/db_util.hpp"
 #include "rpc/webui.hpp"
 #include "libTAU/session.hpp"
 
@@ -50,7 +51,7 @@ namespace libTAU
 {
 	struct tau_handler : http_handler
 	{
-		tau_handler(session& s);
+		tau_handler(session& s, tau_shell_sql* sqldb);
 		~tau_handler();
 
 		virtual bool handle_http(mg_connection* conn,
@@ -104,6 +105,7 @@ namespace libTAU
 
 		time_t m_start_time;
 		session& m_ses;
+		tau_shell_sql* m_sqldb;
 	};
 }
 

@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 #include "rpc/json_util.hpp"
+#include <iostream> // for strcmp()
 #include <string.h> // for strcmp()
 #include <stdlib.h> // for strtoll()
 
@@ -51,12 +52,24 @@ jsmntok_t* skip_item(jsmntok_t* i)
 	return i;
 }
 
+/*
+tokens: tokens after jsmn_parse;
+buf: origin data
+key: key to find
+s: key num in the array
+num_keys: tokens number
+type: type
+*/
 jsmntok_t* find_key_in_array(jsmntok_t* tokens, char* buf, char const* key, int s, int num_keys, int type)
 {
+	if (tokens[0].type != JSMN_OBJECT) return NULL;
 	// we skip two items at a time, first the key then the value
-	for (jsmntok_t* i = &tokens[1]; num_keys > 0; i = skip_item(skip_item(i)), --num_keys)
+	int index = 1;
+	for (jsmntok_t* i = &tokens[index]; num_keys > 0; i = &tokens[++index], --num_keys)
 	{
-		buf[i->end] = 0;
+		//std::cout << "i: " << i->start << std::endl;
+		if (i->start == -1) continue;
+		//buf[i->end] = 0;
 		if (strcmp(key, buf + i->start)) continue;
 		if (i[1].type != type) continue;
 		if(0 == s)

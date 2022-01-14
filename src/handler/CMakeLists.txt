@@ -14,15 +14,18 @@ add_library(handler "")
 
 #link tau lib
 
-include_directories("/home/cowtc/data/libTAU-build/openssl/include" "/home/cowtc/data/libTAU-build/boost" "/home/cowtc/data/libTAU-build/leveldb/include" "/home/cowtc/data/libTAU-build/sqlite/include" "/usr/local/include")
+include_directories("/home/cowtc/data/libTAU-build/openssl/include" "/home/cowtc/data/libTAU-build/boost" "/home/cowtc/data/libTAU-build/sqlite/include" "/usr/local/include")
 
-link_directories("/home/cowtc/data/libTAU-build/boost/lib" "/home/cowtc/data/libTAU-build/openssl/lib" "/home/cowtc/data/libTAU-build/leveldb/lib" "/home/cowtc/data/libTAU-build/sqlite/lib" "/usr/local/lib")
+link_directories("/home/cowtc/data/libTAU-build/boost/lib" "/home/cowtc/data/libTAU-build/openssl/lib" "/home/cowtc/data/libTAU-build/sqlite/lib" "/usr/local/lib")
 
 target_link_libraries(handler TAU)
 
 target_link_libraries(handler dl)
 
-target_link_libraries(handler iconv)
+#target_link_libraries(handler iconv)
+
+#link sqlite lib
+target_link_libraries(handler sqlite3)
 
 target_link_libraries(handler rpc)
 

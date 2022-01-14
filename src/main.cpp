@@ -1,6 +1,5 @@
 #include <iostream>
 #include <filesystem>
-#include <leveldb/db.h>
 #include <sqlite3.h>
 
 #include "rpc/webui.hpp"
@@ -175,17 +174,11 @@ int main(int argc, char *const argv[])
 	}
 
 	// open sqldb - sqlite3
-	sqlite3* sqldb;
-	int sqlrc = sqlite3_open_v2(sqldb_path.c_str(), &sqldb, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX | SQLITE_OPEN_SHAREDCACHE, NULL);
-    if (sqlrc != SQLITE_OK) {
-		//报错退出-打开数据库失败
-		fprintf(stderr, "failed to open sqlite db");
-		exit(1);
-	}
+	tau_shell_sql tau_sql(sqldb_path);
 
 	// initial sqlite3
 	if(initial) {
-		sqlite_db_initial();		
+		tau_sql.sqlite_db_initial();
 		std::cout << "Sqlite3 DB initial success" << std::endl;
 	}
 
@@ -225,7 +218,7 @@ int main(int argc, char *const argv[])
 	std::cout << "Session parameters' setting Over" << std::endl;
 
 	//定义tau communication handle
-	tau_handler t_handler(ses);
+	tau_handler t_handler(ses, &tau_sql);
 
 	//定义启动webui
 	webui_base webport;
