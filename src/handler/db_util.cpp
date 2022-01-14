@@ -11,6 +11,7 @@ extern "C" {
 
 #include "handler/db_util.hpp"
 #include "rpc/json_util.hpp"
+#include "libTAU/hex.hpp"
 
 namespace libTAU {
 
@@ -18,10 +19,19 @@ namespace libTAU {
 	{
 		m_db_path = db_storage_file_name;
 	    int sqlrc = sqlite3_open_v2(m_db_path.c_str(), &m_sqldb, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX | SQLITE_OPEN_SHAREDCACHE, NULL);
-    		if (sqlrc != SQLITE_OK) {
-        	//报错退出-打开数据库失败
+  		if (sqlrc != SQLITE_OK) {
+       		//报错退出-打开数据库失败
         	fprintf(stderr, "failed to open sqlite db");
         	exit(1);
+    	} 
+	}
+
+	tau_shell_sql::~tau_shell_sql()
+	{
+	    int sqlrc = sqlite3_close_v2(m_sqldb);
+  		if (sqlrc != SQLITE_OK) {
+       		//报错退出-打开数据库失败
+        	fprintf(stderr, "failed to close sqlite db");
     	} 
 	}
 
@@ -88,7 +98,6 @@ namespace libTAU {
 			if(!table_name) {
 				std::cout << "no key: tableName in config file" << std::endl;
 			}
-			std::cout << "Table Name Type : " << table_name->type << std::endl;
 			int tn_size = table_name->end - table_name->start + 1;
 			char *tn = new char[tn_size];
 			memcpy(tn, &sql_info[table_name->start], tn_size);
@@ -104,9 +113,6 @@ namespace libTAU {
 
 			// process sql into sql standard
 			char* sql = sql_process(sql_temp, sql_size, tn, tn_size);
-			std::cout << tn << std::endl;
-			std::cout << sql << std::endl;
-
 			// create db table
 			char *err_msg = nullptr;
             int ok = sqlite3_exec(m_sqldb, sql, nullptr, nullptr, &err_msg);
@@ -145,22 +151,20 @@ namespace libTAU {
 
 	bool tau_shell_sql::db_add_new_friend(std::string f)
 	{
-		sqlite3_stmt * stmt;
-        char* sql = "INSERT INTO Friends VALUES(?)";
-        int ok = sqlite3_prepare_v2(m_sqldb, sql, -1, &stmt, nullptr);
-        if (ok != SQLITE_OK) {
-        	return false;
-        }
-
+        std::string sql = "INSERT INTO Friends VALUES(";
 		std::string friend_info = "\"" + f + "\", "+ 
 								  "\"" + f + "\", "+
-								 "-1, -1, -1, -1, -1";
-        sqlite3_bind_text(stmt, 1, friend_info.c_str(), friend_info.size(), nullptr);
-        ok = sqlite3_step(stmt);
-        if (ok != SQLITE_DONE) {
-            return false;
-        }
-        sqlite3_finalize(stmt);
+								 "-1, -1, -1, -1, -1)";
+		sql += friend_info;
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql insert new friend error" << std::endl;
+        	return false;
+		}
 
         return true;
 	}
@@ -180,8 +184,46 @@ namespace libTAU {
 		return true;
 	}
 
-	bool tau_shell_sql::db_add_new_message()
+	bool tau_shell_sql::db_add_new_message(const communication::message& msg)
 	{
+	 	std::string hash = aux::to_hex(msg.sha256());
+		std::cout << hash << std::endl;
+		std::int64_t ts = msg.timestamp();
+		std::stringstream time_stamp;
+		time_stamp << ts;
+		std::cout << time_stamp.str() << std::endl;
+		//sender
+ 		dht::public_key sender_pubkey = msg.sender();
+		std::string sender = aux::toHex(sender_pubkey.bytes);
+		std::cout << sender << std::endl;
+
+		//receiver
+ 		dht::public_key receiver_pubkey = msg.receiver();
+		std::string receiver = aux::toHex(receiver_pubkey.bytes);
+		std::cout << receiver << std::endl;
+
+		std::string payload;
+		aux::bytes p = msg.payload();
+		payload.insert(payload.end(), p.begin(), p.end());
+		std::cout << payload << std::endl;
+
+        std::string sql = "INSERT INTO ChatMessages VALUES(";
+		sql += "\"" + hash + "\", \"" + 
+			   sender + "\", \"" +
+			   receiver + "\", " +
+			   time_stamp.str() + ", 0, \"" +
+			   hash + "\", 0, \"" + 
+			   payload + "\")";
+			
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql insert new msg error" << std::endl;
+        	return false;
+		}
 		return true;
 	}
 

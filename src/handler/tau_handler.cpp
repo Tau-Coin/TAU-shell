@@ -51,6 +51,7 @@ extern "C" {
 
 #include "libTAU/session.hpp"
 #include "libTAU/session_status.hpp"
+#include "libTAU/communication/message.hpp"
 #include "handler/response_buffer.hpp" // for appendf
 #include "handler/escape_json.hpp" // for escape_json
 
@@ -130,8 +131,6 @@ void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , ch
 
 }
 
-char const* to_bool(bool b) { return b ? "true" : "false"; }
-
 void tau_handler::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	// TODO: post session stats instead, and capture the performance counters
@@ -169,36 +168,40 @@ void tau_handler::session_stats(std::vector<char>& buf, jsmntok_t* args, std::in
 }
 
 //communication apis
-void tau_handler::new_account_seed(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::new_account_seed(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 
 }
 
 // main loop time interval
-void tau_handler::set_loop_time_interval(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::set_loop_time_interval(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* ti = find_key(args, buffer, "time-interval", JSMN_PRIMITIVE);
 	int time_interval = atoi(buffer + ti->start);
 	std::cout << "Set Time Interval: " << time_interval << std::endl;
 	m_ses.set_loop_time_interval(time_interval);
+	appendf(buf, "{ \"result\": \"Set Time Interval\": %d \"OK\"}", time_interval);
 }
 
 //friends
-void tau_handler::add_new_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::add_new_friend(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
 	buffer[f->end] = 0;
 	char const* friend_pubkey_hex_char = &buffer[f->start];
 	char* friend_pubkey_char = new char[KEY_LEN];
+	std::cout << "Friend: " << friend_pubkey_char << std::endl;
 	hex_char_to_bytes_char(friend_pubkey_hex_char, friend_pubkey_char, KEY_HEX_LEN);
 	dht::public_key friend_pubkey(friend_pubkey_char);
 	m_ses.add_new_friend(friend_pubkey);
 
 	//add in db
-	m_sqldb->db_add_new_friend(friend_pubkey_char);
+	std::cout << "Add sqldb" << std::endl;
+	m_sqldb->db_add_new_friend(friend_pubkey_hex_char);
+	appendf(buf, "{ \"result\": \"Add New Friend\": %s \"OK\"}", friend_pubkey_hex_char);
 }
 
-void tau_handler::delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::delete_friend(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
 	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
 	buffer[f->end] = 0;
@@ -210,52 +213,63 @@ void tau_handler::delete_friend(std::vector<char>&, jsmntok_t* args, std::int64_
 
 	//delete in db
 	m_sqldb->db_delete_friend(friend_pubkey_char);
+	appendf(buf, "{ \"result\": \"Delete Friend\": %s \"OK\"}", friend_pubkey_hex_char);
 }
 
 void tau_handler::get_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
-	buffer[f->end] = 0;
-	char const* friend_pubkey_hex_char = &buffer[f->start];
-	char* friend_pubkey_char = new char[KEY_LEN];
-	hex_char_to_bytes_char(friend_pubkey_hex_char, friend_pubkey_char, KEY_HEX_LEN);
-	dht::public_key friend_pubkey(friend_pubkey_char);
-	std::vector<char> info = m_ses.get_friend_info(friend_pubkey);
-	std::cout << "Friend Info: " << info.data() << std::endl;
-	
-	//insert friend info
-	m_sqldb->db_insert_friend_info();
+
 }
 
 void tau_handler::update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-	jsmntok_t* f = find_key(args, buffer, "friend", JSMN_STRING);
-	jsmntok_t* i = find_key(args, buffer, "info", JSMN_STRING);
-
-	//friend
-	buffer[f->end] = 0;
-	char const* friend_pubkey_hex_char = &buffer[f->start];
-	char* friend_pubkey_char = new char[KEY_LEN];
-	hex_char_to_bytes_char(friend_pubkey_hex_char, friend_pubkey_char, KEY_HEX_LEN);
-	dht::public_key friend_pubkey(friend_pubkey_char);
-
-	//info
-	std::vector<char> friend_info;
-	friend_info.insert(friend_info.end(), &buffer[i->start], &buffer[i->end]);
-
-	bool flag = m_ses.update_friend_info(friend_pubkey, friend_info);
-
-	//insert friend info
-	m_sqldb->db_update_friend_info();
 }
 
 // message
 void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-	jsmntok_t* m = find_key(args, buffer, "msg", JSMN_STRING);
+	jsmntok_t* s = find_key(args, buffer, "sender", JSMN_STRING);
+	jsmntok_t* r = find_key(args, buffer, "receiver", JSMN_STRING);
+	jsmntok_t* p = find_key(args, buffer, "payload", JSMN_STRING);
 
+	//sender
+	buffer[s->end] = 0;
+	char const* sender_pubkey_hex_char = &buffer[s->start];
+	char* sender_pubkey_char = new char[KEY_LEN];
+	hex_char_to_bytes_char(sender_pubkey_hex_char, sender_pubkey_char, KEY_HEX_LEN);
+	dht::public_key sender_pubkey(sender_pubkey_char);
+
+	std::cout << sender_pubkey_hex_char << std::endl;
+
+	//receiver
+	buffer[r->end] = 0;
+	char const* receiver_pubkey_hex_char = &buffer[r->start];
+	char* receiver_pubkey_char = new char[KEY_LEN];
+	hex_char_to_bytes_char(receiver_pubkey_hex_char, receiver_pubkey_char, KEY_HEX_LEN);
+	dht::public_key receiver_pubkey(receiver_pubkey_char);
+
+	std::cout << "R: " << receiver_pubkey_hex_char << std::endl;
+
+	//payload
+	aux::bytes payload;
+	int index = p->start;
+	while(index < p->end){
+		payload.push_back(buffer[index]);
+		index++;
+	}
+
+	std::cout << "P: " << payload.data() << std::endl;
+
+	//timestamp
+	std::int64_t time_stamp = m_ses.get_session_time();
+
+	communication::message msg(time_stamp, sender_pubkey, receiver_pubkey, payload);
+
+	m_ses.add_new_message(msg);
+	std::cout << "Session Send Success" << std::endl;
+	
 	//insert friend info
-	m_sqldb->db_add_new_message();
+	m_sqldb->db_add_new_message(msg);
 }
 
 //blockchain
