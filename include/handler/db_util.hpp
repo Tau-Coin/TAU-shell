@@ -1,6 +1,7 @@
 #include <string>
 #include <sqlite3.h>
 
+#include "libTAU/kademlia/types.hpp"
 #include "libTAU/communication/message.hpp"
 
 #ifndef LIBTAU_SHELL_DB_HPP
@@ -26,6 +27,10 @@ namespace libTAU {
 		bool db_update_friend_info();
 
 		bool db_add_new_message(const communication::message& msg);
+
+		//blockchain
+		bool db_follow_chain(const std::string& chain_id, std::set<dht::public_key> peers);
+		bool db_unfollow_chain(const std::string& chain_id);
 
 	private:
 		std::string m_db_path;

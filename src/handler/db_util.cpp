@@ -12,6 +12,7 @@ extern "C" {
 #include "handler/db_util.hpp"
 #include "rpc/json_util.hpp"
 #include "libTAU/hex.hpp"
+#include "libTAU/blockchain/constants.hpp"
 
 namespace libTAU {
 
@@ -227,4 +228,83 @@ namespace libTAU {
 		return true;
 	}
 
+	bool tau_shell_sql::db_follow_chain(const std::string& chain_id, std::set<dht::public_key> peers)
+	{
+
+		std::string community_name_hex_str;
+		for(auto i = chain_id.begin() + blockchain::CHAIN_ID_HASH_MAX_LENGTH * 2; i != chain_id.end(); i++){
+			community_name_hex_str.push_back(*i);
+		}
+		aux::bytes community_name = aux::fromHex(community_name_hex_str);
+		std::cout << "DB Follow Chain Community Name: " << community_name.data() << std::endl;
+
+        std::string sql = "INSERT INTO Communities VALUES(";
+		std::string community_info = "\"" + chain_id + "\", "+ 
+								  "\"" + community_name_hex_str + "\", "+
+								 "0, 0, 0, 0)";
+		sql += community_info;
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql insert new community error" << std::endl;
+        	return false;
+		}
+
+		// update members
+		for(auto i = peers.begin(); i != peers.end(); i++) {
+			dht::public_key peer = *i;
+			std::string key = aux::toHex(peer.bytes);
+			std::cout << key << std::endl;
+			sql = "INSERT INTO Members VALUES(";
+			sql += "\"" + chain_id + "\", \"" + 
+			   key + "\", 0, 0, 0, 0)";
+			std::cout << sql << std::endl;
+			char *err_msg = nullptr;
+        	int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        	if (ok != SQLITE_OK) {
+            	sqlite3_free(err_msg);
+				std::cout << "sql insert new member error" << std::endl;
+			}
+		}
+
+        return true;
+	}
+
+	bool tau_shell_sql::db_unfollow_chain(const std::string& chain_id)
+	{
+
+		std::string community_name_hex_str;
+		for(auto i = chain_id.begin() + blockchain::CHAIN_ID_HASH_MAX_LENGTH * 2; i != chain_id.end(); i++){
+			community_name_hex_str.push_back(*i);
+		}
+		aux::bytes community_name = aux::fromHex(community_name_hex_str);
+		std::cout << "DB UnFollow Chain Community Name: " << community_name.data() << std::endl;
+
+        std::string sql = "DELETE FROM Communities WHERE chainID=";
+		sql += "\"" + chain_id + "\")";
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql delete community error" << std::endl;
+        	return false;
+		}
+
+		// update members
+		sql = "DELETE FROM Members WHERE chainID = ";
+		sql += "\"" + chain_id + "\")";
+		std::cout << sql << std::endl;
+       	ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+       	if (ok != SQLITE_OK) {
+           	sqlite3_free(err_msg);
+			std::cout << "sql delete members error" << std::endl;
+		}
+
+        return true;
+	}
 }

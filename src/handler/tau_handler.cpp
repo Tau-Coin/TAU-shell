@@ -51,6 +51,7 @@ extern "C" {
 
 #include "libTAU/session.hpp"
 #include "libTAU/session_status.hpp"
+#include "libTAU/aux_/common_data.h"
 #include "libTAU/communication/message.hpp"
 #include "handler/response_buffer.hpp" // for appendf
 #include "handler/escape_json.hpp" // for escape_json
@@ -90,6 +91,10 @@ static method_handler handlers[] =
 	{"get-friend-info", &tau_handler::get_friend_info},
 	{"delete-friend", &tau_handler::delete_friend},
 	{"add-new-message", &tau_handler::add_new_message},
+	{"create-chain-id", &tau_handler::create_chain_id},
+	{"create-new-community", &tau_handler::create_new_community},
+	{"follow-chain", &tau_handler::follow_chain},
+	{"unfollow-chain", &tau_handler::unfollow_chain},
 };
 
 void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
@@ -119,7 +124,7 @@ void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , ch
 		handled = true;
 
 		if (args) buffer[args->end] = 0;
-		printf("%s: %s\n", m, args ? buffer + args->start : "{}");
+		printf("%s: %d, %s\n", m, args->type, args ? buffer + args->start : "{}");
 
 		(this->*handlers[i].fun)(buf, args, tag, buffer);
 		std::cout << "Method Over" << std::endl;
@@ -248,8 +253,6 @@ void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int6
 	hex_char_to_bytes_char(receiver_pubkey_hex_char, receiver_pubkey_char, KEY_HEX_LEN);
 	dht::public_key receiver_pubkey(receiver_pubkey_char);
 
-	std::cout << "R: " << receiver_pubkey_hex_char << std::endl;
-
 	//payload
 	aux::bytes payload;
 	int index = p->start;
@@ -258,35 +261,93 @@ void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int6
 		index++;
 	}
 
-	std::cout << "P: " << payload.data() << std::endl;
-
 	//timestamp
 	std::int64_t time_stamp = m_ses.get_session_time();
 
 	communication::message msg(time_stamp, sender_pubkey, receiver_pubkey, payload);
 
 	m_ses.add_new_message(msg);
-	std::cout << "Session Send Success" << std::endl;
 	
 	//insert friend info
 	m_sqldb->db_add_new_message(msg);
 }
 
 //blockchain
-void tau_handler::create_chain_id(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::create_chain_id(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	jsmntok_t* c = find_key(args, buffer, "community_name", JSMN_STRING);
+	std::vector<char> community_name;
+	buffer[c->end] = 0;
+	for(int i = c->start; i < c->end; i++){
+		community_name.push_back(buffer[i]);
+	}
+	std::cout << "Name: "	<< community_name.data() << std::endl;
+
+	std::vector<char> chain_id = m_ses.create_chain_id(community_name);
+	std::string hex_chain_id = aux::toHex(chain_id);
+
+	std::cout << "Id: "	<< hex_chain_id << std::endl;
+	appendf(buf, "{\"Create Chain Id\": %s \"OK\"}", hex_chain_id.c_str());
 }
 
 void tau_handler::create_new_community(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	
 }
 
-void tau_handler::follow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::follow_chain(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+	jsmntok_t* ks = find_key(args, buffer, "peers", JSMN_ARRAY);
+	std::cout << "Follow Chain Peers Size: " << ks->size << std::endl;
+
+	std::set<dht::public_key> peer_list;
+	for(int i = 0; i < ks->size; i++) {
+		jsmntok_t* pk = find_key_in_array(args, buffer, "peer_key", i, args->size*2 + 2, JSMN_STRING);
+		buffer[pk->end] = 0;
+		char const* pubkey_hex_char = &buffer[pk->start];
+		std::cout << "key: " << pubkey_hex_char << std::endl;
+		char* pubkey_char = new char[KEY_LEN];
+		hex_char_to_bytes_char(pubkey_hex_char, pubkey_char, KEY_HEX_LEN);
+		dht::public_key pubkey(pubkey_char);
+		peer_list.emplace(pubkey);
+	}
+
+	std::vector<char> chain_id_hex_vec_char;
+	std::string chain_id_hex_str;
+	buffer[c->end] = 0;
+	for(int i = c->start; i < c->end; i++){
+		chain_id_hex_vec_char.push_back(buffer[i]);
+		chain_id_hex_str.push_back(buffer[i]);
+	}
+	//chain_url
+	blockchain::chain_url cu(chain_id_hex_vec_char, peer_list);
+
+	m_ses.follow_chain(cu);
+
+	//save chain into db
+	m_sqldb->db_follow_chain(chain_id_hex_str, peer_list);
+	appendf(buf, "{\"Follow Chain Id\": %s \"OK\"}", chain_id_hex_str.data());
 }
 
-void tau_handler::unfollow_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::unfollow_chain(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+
+	std::vector<char> chain_id_hex_vec_char;
+	std::string chain_id_hex_str;
+	buffer[c->end] = 0;
+	for(int i = c->start; i < c->end; i++){
+		chain_id_hex_vec_char.push_back(buffer[i]);
+		chain_id_hex_str.push_back(buffer[i]);
+	}
+
+	m_ses.unfollow_chain(chain_id_hex_vec_char);
+
+	//save chain into db
+	m_sqldb->db_unfollow_chain(chain_id_hex_str);
+	appendf(buf, "{\"Unfollow Chain Id\": %s \"OK\"}", chain_id_hex_str.data());
+
 }
 
 void tau_handler::submit_transaction(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)

@@ -67,9 +67,9 @@ jsmntok_t* find_key_in_array(jsmntok_t* tokens, char* buf, char const* key, int 
 	int index = 1;
 	for (jsmntok_t* i = &tokens[index]; num_keys > 0; i = &tokens[++index], --num_keys)
 	{
-		//std::cout << "i: " << i->start << std::endl;
+		std::cout << "i: " << i->start << std::endl;
 		if (i->start == -1) continue;
-		//buf[i->end] = 0;
+		buf[i->end] = 0;
 		if (strcmp(key, buf + i->start)) continue;
 		if (i[1].type != type) continue;
 		if(0 == s)
