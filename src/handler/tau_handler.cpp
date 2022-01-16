@@ -53,6 +53,7 @@ extern "C" {
 #include "libTAU/session_status.hpp"
 #include "libTAU/aux_/common_data.h"
 #include "libTAU/communication/message.hpp"
+#include "libTAU/blockchain/block.hpp"
 #include "handler/response_buffer.hpp" // for appendf
 #include "handler/escape_json.hpp" // for escape_json
 
@@ -334,44 +335,174 @@ void tau_handler::unfollow_chain(std::vector<char>& buf, jsmntok_t* args, std::i
 {
 	jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
 
-	std::vector<char> chain_id_hex_vec_char;
-	std::string chain_id_hex_str;
+	//chain_id
+	int size = c->start - c->end + 1;
+	std::cout << size << std::endl;
 	buffer[c->end] = 0;
-	for(int i = c->start; i < c->end; i++){
-		chain_id_hex_vec_char.push_back(buffer[i]);
+	char const* chain_id_hex = &buffer[c->start];
+	std::string chain_id_hex_str;
+	for(int i = c->start; i< c->end; i++) {
 		chain_id_hex_str.push_back(buffer[i]);
 	}
-
-	m_ses.unfollow_chain(chain_id_hex_vec_char);
+	std::vector<char> chain_id;
+	chain_id.reserve(size/2);
+	hex_char_to_bytes_char(chain_id_hex, chain_id.data(), size);
+	
+	m_ses.unfollow_chain(chain_id);
 
 	//save chain into db
 	m_sqldb->db_unfollow_chain(chain_id_hex_str);
-	appendf(buf, "{\"Unfollow Chain Id\": %s \"OK\"}", chain_id_hex_str.data());
+	appendf(buf, "{\"Unfollow Chain Id\": %s \"OK\"}", chain_id_hex);
 
 }
 
 void tau_handler::submit_transaction(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	
 }
 
-void tau_handler::get_account_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_account_info(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+	jsmntok_t* k = find_key(args, buffer, "pubkey", JSMN_STRING);
+
+	//chain_id
+	int size = c->start - c->end + 1;
+	std::cout << size << std::endl;
+	buffer[c->end] = 0;
+	char const* chain_id_hex = &buffer[c->start];
+	std::vector<char> chain_id;
+	chain_id.reserve(size/2);
+	hex_char_to_bytes_char(chain_id_hex, chain_id.data(), size);
+
+	//pubkey
+	buffer[k->end] = 0;
+	char const* pubkey_hex_char = &buffer[k->start];
+	char* pubkey_char = new char[KEY_LEN];
+	hex_char_to_bytes_char(pubkey_hex_char, pubkey_char, KEY_HEX_LEN);
+	dht::public_key pubkey(pubkey_char);
+
+	std::cout << pubkey_hex_char << std::endl;
+
+	blockchain::account act = m_ses.get_account_info(chain_id, pubkey);
+	if(act.empty()){
+		appendf(buf, "{ \"result\": \"Account\": "
+					 "\"Chain ID\": %s, \"Pubkey\": %s, not existed!",
+					 chain_id_hex, pubkey_hex_char);
+		return ;
+	}
+	//balance
+	std::int64_t balance = act.balance();
+	std::int64_t nonce = act.nonce();
+	std::int64_t effective_power = act.effective_power();
+	std::int64_t block_number = act.block_number();
+	
+	appendf(buf, "{ \"result\": \"Account\": "
+            "\"Chain ID\": %s, \"Pubkey\": %s,"
+		    "\"balance\": %ld, \"nonce\": %ld, "
+			"\"effective_power\": %ld, \"block_number\": %ld}",
+		    chain_id_hex, pubkey_hex_char, 
+			balance, nonce, effective_power, block_number);
 }
 
-void tau_handler::get_top_tip_block(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_top_tip_block(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+	jsmntok_t* n = find_key(args, buffer, "number", JSMN_PRIMITIVE);
+
+	//chain_id
+	int size = c->start - c->end + 1;
+	std::cout << size << std::endl;
+	buffer[c->end] = 0;
+	char const* chain_id_hex = &buffer[c->start];
+	std::vector<char> chain_id;
+	chain_id.reserve(size/2);
+	hex_char_to_bytes_char(chain_id_hex, chain_id.data(), size);
+
+	//number
+	int number = atoi(buffer + n->start);
+
+	std::cout << number << std::endl;
+
+	std::vector<blockchain::block> blocks = m_ses.get_top_tip_block(chain_id, number);
+
+	for(int i = 0; i< blocks.size(); i++) {
+		appendf(buf, blocks[i].to_string().c_str());
+	}
 }
 
-void tau_handler::get_median_tx_fee(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_median_tx_fee(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+	//chain_id
+	int size = c->start - c->end + 1;
+	std::cout << size << std::endl;
+	buffer[c->end] = 0;
+	char const* chain_id_hex = &buffer[c->start];
+	std::vector<char> chain_id;
+	chain_id.reserve(size/2);
+	hex_char_to_bytes_char(chain_id_hex, chain_id.data(), size);
+
+	std::int64_t fee = m_ses.get_median_tx_free(chain_id);
+
+	appendf(buf, "{\"Get Chain Id\": %s, Fee: %d \"OK\"}", chain_id_hex, fee);
+
 }
 
-void tau_handler::get_block_by_number(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_block_by_number(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+	jsmntok_t* n = find_key(args, buffer, "number", JSMN_PRIMITIVE);
+
+	//chain_id
+	int size = c->start - c->end + 1;
+	std::cout << size << std::endl;
+	buffer[c->end] = 0;
+	char const* chain_id_hex = &buffer[c->start];
+	std::vector<char> chain_id;
+	chain_id.reserve(size/2);
+	hex_char_to_bytes_char(chain_id_hex, chain_id.data(), size);
+
+	//number
+	int number = atoi(buffer + n->start);
+
+	std::cout << number << std::endl;
+
+	blockchain::block block = m_ses.get_block_by_number(chain_id, number);
+
+	appendf(buf, block.to_string().c_str());
 }
 
-void tau_handler::get_block_by_hash(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::get_block_by_hash(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+	jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+	jsmntok_t* h = find_key(args, buffer, "block_hash", JSMN_STRING);
+
+	//chain_id
+	int size = c->start - c->end + 1;
+	std::cout << size << std::endl;
+	buffer[c->end] = 0;
+	char const* chain_id_hex = &buffer[c->start];
+	std::vector<char> chain_id;
+	chain_id.reserve(size/2);
+	hex_char_to_bytes_char(chain_id_hex, chain_id.data(), size);
+
+	//blockhash
+	size = h->start - h->end + 1;
+	std::cout << size << std::endl;
+	buffer[h->end] = 0;
+	char const* block_hash_hex = &buffer[c->start];
+	std::vector<char> block_hash;
+	block_hash.reserve(size/2);
+	hex_char_to_bytes_char(block_hash_hex, block_hash.data(), size);
+
+	sha256_hash hash(block_hash);
+
+	std::cout << block_hash.data() << std::endl;
+
+	blockchain::block block = m_ses.get_block_by_hash(chain_id, hash);
+
+	appendf(buf, block.to_string().c_str());
 }
 
 tau_handler::tau_handler(session& s, tau_shell_sql* sqldb)
