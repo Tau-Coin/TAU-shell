@@ -36,8 +36,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #define INT64_FMT  "I64d"
 
 #include "handler/db_util.hpp"
+#include "rpc/auth.hpp"
 #include "rpc/webui.hpp"
 #include "libTAU/session.hpp"
+#include "libTAU/kademlia/types.hpp"
 
 extern "C" {
 #include "rpc/jsmn.h"
@@ -51,7 +53,7 @@ namespace libTAU
 {
 	struct tau_handler : http_handler
 	{
-		tau_handler(session& s, tau_shell_sql* sqldb);
+		tau_handler(session& s, tau_shell_sql* sqldb, auth_interface const* auth, dht::public_key& pubkey, dht::secret_key& seckey);
 		~tau_handler();
 
 		virtual bool handle_http(mg_connection* conn,
@@ -105,7 +107,10 @@ namespace libTAU
 
 		time_t m_start_time;
 		session& m_ses;
+		dht::public_key& m_pubkey;
+		dht::secret_key& m_seckey;
 		tau_shell_sql* m_sqldb;
+		auth_interface const* m_auth;
 	};
 }
 

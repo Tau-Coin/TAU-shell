@@ -3,6 +3,7 @@
 
 #include "libTAU/kademlia/types.hpp"
 #include "libTAU/communication/message.hpp"
+#include "libTAU/blockchain/transaction.hpp"
 
 #ifndef LIBTAU_SHELL_DB_HPP
 #define LIBTAU_SHELL_DB_HPP
@@ -31,6 +32,8 @@ namespace libTAU {
 		//blockchain
 		bool db_follow_chain(const std::string& chain_id, std::set<dht::public_key> peers);
 		bool db_unfollow_chain(const std::string& chain_id);
+
+		bool db_add_new_transaction(const blockchain::transaction& tx);
 
 	private:
 		std::string m_db_path;

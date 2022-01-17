@@ -307,4 +307,78 @@ namespace libTAU {
 
         return true;
 	}
+
+	bool tau_shell_sql::db_add_new_transaction(const blockchain::transaction& tx)
+	{
+	 	std::string hash = aux::to_hex(tx.sha256());
+		std::cout << hash << std::endl;
+
+		//chain_id
+		std::string chain_id;
+		chain_id.insert(chain_id.end(), tx.chain_id().begin(), tx.chain_id().end());
+
+		//timestamp
+		std::int64_t tt = tx.timestamp();
+		std::stringstream tx_time;
+		tx_time << tt;
+		std::cout << tx_time.str() << std::endl;
+
+		//fee
+		std::int64_t tf = tx.fee();
+		std::stringstream tx_fee;
+		tx_fee << tf;
+		std::cout << tx_fee.str() << std::endl;
+
+		//amount
+		std::int64_t ta = tx.amount();
+		std::stringstream tx_amount;
+		tx_amount << ta;
+		std::cout << tx_amount.str() << std::endl;
+	
+		//nonce
+		std::int64_t tn = tx.nonce();
+		std::stringstream tx_nonce;
+		tx_nonce << tn;
+		std::cout << tx_nonce.str() << std::endl;
+			
+		//sender
+ 		dht::public_key sender_pubkey = tx.sender();
+		std::string sender = aux::toHex(sender_pubkey.bytes);
+		std::cout << sender << std::endl;
+
+		//receiver
+ 		dht::public_key receiver_pubkey = tx.receiver();
+		std::string receiver = aux::toHex(receiver_pubkey.bytes);
+		std::cout << receiver << std::endl;
+
+		//payload
+		std::string payload;
+		aux::bytes p = tx.payload();
+		payload.insert(payload.end(), p.begin(), p.end());
+		std::cout << payload << std::endl;
+
+        std::string sql = "INSERT INTO Txs VALUES(";
+		sql += "\"" + hash + "\", \"" + 
+			   chain_id + "\", \"" +
+			   sender + "\", " +
+			   tx_fee.str() + ", " + 
+               tx_time.str() + ", " +
+			   tx_nonce.str() + ", 0, \"" + 
+			   payload + "\", 0, 0, \"" +
+			   receiver + "\", " +
+			   tx_amount.str() + ", 0)";
+			
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql insert new tx error" << std::endl;
+        	return false;
+		}
+
+		return true;
+	}
+
 }

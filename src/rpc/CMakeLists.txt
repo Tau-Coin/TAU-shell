@@ -12,4 +12,5 @@ target_sources(rpc
 	cdecode
 	base64
 	webui
+	auth
 )
