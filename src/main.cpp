@@ -6,6 +6,7 @@
 #include "handler/hex_util.hpp"
 #include "handler/db_util.hpp"
 #include "handler/tau_constants.hpp"
+#include "handler/alert_handler.hpp"
 #include "handler/tau_handler.hpp"
 
 #include "libTAU/aux_/ed25519.hpp"
@@ -242,6 +243,7 @@ int main(int argc, char *const argv[])
 
     //定义tau communication handle
     tau_handler t_handler(ses, &tau_sql, &authorizer, m_pubkey, m_seckey);
+    alert_handler a_handler(&tau_sql);
 
     //定义启动webui
     webui_base webport;
@@ -277,26 +279,50 @@ int main(int argc, char *const argv[])
                 case dht_log_alert::alert_type:
                     fprintf(debug_file, " %s\n", (*i)->message().c_str());
                     break;
+				//communication
                 case communication_new_device_id_alert::alert_type:
-                    //on_new_device_id(*i, db);
+                    a_handler.alert_on_new_device_id(*i);
                     break;
                 case communication_new_message_alert::alert_type:
-                    //on_new_message(*i, db);
+                    a_handler.alert_on_new_message(*i);
                     break;
                 case communication_confirmation_root_alert::alert_type:
-                    //on_confirmation_root(*i, db);
+                    a_handler.alert_on_confirmation_root(*i);
                     break;
                 case communication_syncing_message_alert::alert_type:
-                    //on_syncing_message(*i, db);
+                    a_handler.alert_on_syncing_message(*i);
                     break;
                 case communication_friend_info_alert::alert_type:
-                    //on_friend_info(*i, db);
+                    a_handler.alert_on_friend_info(*i);
                     break;
                 case communication_last_seen_alert::alert_type:
-                    //on_last_seen(*i, db);
+                    a_handler.alert_on_last_seen(*i);
                     break;
                 case communication_log_alert::alert_type:
                     fprintf(debug_file, " %s\n", (*i)->message().c_str());
+                    break;
+				//blockchain
+                case blockchain_new_head_block_alert::alert_type:
+                    a_handler.alert_on_new_head_block(*i);
+                    break;
+                case blockchain_new_tail_block_alert::alert_type:
+                    a_handler.alert_on_new_tail_block(*i);
+                    break;
+                case blockchain_new_consensus_point_block_alert::alert_type:
+                    a_handler.alert_on_new_consensus_point_block(*i);
+                    break;
+				case blockchain_new_transaction_alert::alert_type:
+					a_handler.alert_on_new_transaction(*i);
+                    break;
+				//blockchain-useless, current
+                case blockchain_rollback_block_alert::alert_type:
+                    a_handler.alert_on_rollback_block(*i);
+                    break;
+                case blockchain_fork_point_block_alert::alert_type:
+                    a_handler.alert_on_fork_point_block(*i);
+                    break;
+                case blockchain_top_three_votes_alert::alert_type:
+                    a_handler.alert_on_top_three_votes(*i);
                     break;
             }
         }

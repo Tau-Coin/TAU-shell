@@ -33,6 +33,7 @@ target_link_libraries(handler pthread)
 
 target_sources(handler 
   PRIVATE
+	alert_handler
 	tau_handler
 	db_util	
 	hex_util	

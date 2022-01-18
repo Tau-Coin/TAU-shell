@@ -19,7 +19,7 @@ namespace libTAU {
 	tau_shell_sql::tau_shell_sql(std::string db_storage_file_name)
 	{
 		m_db_path = db_storage_file_name;
-	    int sqlrc = sqlite3_open_v2(m_db_path.c_str(), &m_sqldb, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX | SQLITE_OPEN_SHAREDCACHE, NULL);
+	    int sqlrc = sqlite3_open_v2(m_db_path.c_str(), &m_db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX | SQLITE_OPEN_SHAREDCACHE, NULL);
   		if (sqlrc != SQLITE_OK) {
        		//报错退出-打开数据库失败
         	fprintf(stderr, "failed to open sqlite db");
@@ -29,7 +29,7 @@ namespace libTAU {
 
 	tau_shell_sql::~tau_shell_sql()
 	{
-	    int sqlrc = sqlite3_close_v2(m_sqldb);
+	    int sqlrc = sqlite3_close_v2(m_db);
   		if (sqlrc != SQLITE_OK) {
        		//报错退出-打开数据库失败
         	fprintf(stderr, "failed to close sqlite db");
@@ -116,7 +116,7 @@ namespace libTAU {
 			char* sql = sql_process(sql_temp, sql_size, tn, tn_size);
 			// create db table
 			char *err_msg = nullptr;
-            int ok = sqlite3_exec(m_sqldb, sql, nullptr, nullptr, &err_msg);
+            int ok = sqlite3_exec(m_db, sql, nullptr, nullptr, &err_msg);
             if (ok != SQLITE_OK) {
                 sqlite3_free(err_msg);
 				std::cout << "sql create table exec error" << std::endl;
@@ -160,7 +160,7 @@ namespace libTAU {
 		std::cout << sql << std::endl;
 
 		char *err_msg = nullptr;
-        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
         if (ok != SQLITE_OK) {
             sqlite3_free(err_msg);
 			std::cout << "sql insert new friend error" << std::endl;
@@ -175,6 +175,60 @@ namespace libTAU {
 		return true;
 	}
 
+	bool tau_shell_sql::db_update_friend_last_seen(const dht::public_key& pubkey, std::int64_t time)
+	{
+		//pubkey
+		std::string peer = aux::toHex(pubkey.bytes);
+		std::cout << peer << std::endl;
+
+		//time
+		std::stringstream ss_time;
+		ss_time << time;
+		std::cout << ss_time.str() << std::endl;
+
+        std::string sql = "UPDATE Friends SET lastSeenTime = ";
+		sql += ss_time.str() + " WHERE friendPK = \"" +
+			   peer + "\"";
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql update friend last seen error" << std::endl;
+        	return false;
+		}
+		
+		return true;
+	}
+
+	bool tau_shell_sql::db_update_friend_last_comm(const dht::public_key& pubkey, std::int64_t time)
+	{
+		//pubkey
+		std::string peer = aux::toHex(pubkey.bytes);
+		std::cout << peer << std::endl;
+
+		//time
+		std::stringstream ss_time;
+		ss_time << time;
+		std::cout << ss_time.str() << std::endl;
+
+        std::string sql = "UPDATE Friends SET lastCommTime = ";
+		sql += ss_time.str() + " WHERE friendPK = \"" +
+			   peer + "\"";
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql update friend last seen error" << std::endl;
+        	return false;
+		}
+		
+		return true;
+	}
+
 	bool tau_shell_sql::db_insert_friend_info()
 	{
 		return true;
@@ -185,14 +239,18 @@ namespace libTAU {
 		return true;
 	}
 
-	bool tau_shell_sql::db_add_new_message(const communication::message& msg)
+	bool tau_shell_sql::db_add_new_message(const communication::message& msg, int status)
 	{
+		//hash
 	 	std::string hash = aux::to_hex(msg.sha256());
 		std::cout << hash << std::endl;
+
+		//timestamp
 		std::int64_t ts = msg.timestamp();
 		std::stringstream time_stamp;
 		time_stamp << ts;
 		std::cout << time_stamp.str() << std::endl;
+
 		//sender
  		dht::public_key sender_pubkey = msg.sender();
 		std::string sender = aux::toHex(sender_pubkey.bytes);
@@ -203,11 +261,15 @@ namespace libTAU {
 		std::string receiver = aux::toHex(receiver_pubkey.bytes);
 		std::cout << receiver << std::endl;
 
+		//payload
 		std::string payload;
 		aux::bytes p = msg.payload();
 		payload.insert(payload.end(), p.begin(), p.end());
 		std::cout << payload << std::endl;
 
+		/*
+	      insert into ChatMessages		
+		*/
         std::string sql = "INSERT INTO ChatMessages VALUES(";
 		sql += "\"" + hash + "\", \"" + 
 			   sender + "\", \"" +
@@ -219,12 +281,77 @@ namespace libTAU {
 		std::cout << sql << std::endl;
 
 		char *err_msg = nullptr;
-        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
         if (ok != SQLITE_OK) {
             sqlite3_free(err_msg);
 			std::cout << "sql insert new msg error" << std::endl;
         	return false;
 		}
+		
+		/*
+		TODO: update friend last comm time
+		*/
+	
+		//status
+		std::stringstream ss_status;
+		ss_status << status;
+		std::cout << ss_status.str() << std::endl;
+
+		/*
+	      insert into ChatMsgLOgs		
+		*/
+        sql = "INSERT INTO ChatMsgLogs VALUES(";
+		sql += "\"" + hash + "\", \"" + 
+			   sender + "\", \"" +
+			   ss_status.str() + "\", " +
+			   time_stamp.str() + ")";
+			
+		std::cout << sql << std::endl;
+
+        ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql insert new msg chatmsglogs error" << std::endl;
+        	return false;
+		}
+		
+		return true;
+	}
+
+	bool tau_shell_sql::db_update_message_status(const sha256_hash& msg_hash, std::int64_t time, int status) {
+
+		//hash
+	 	std::string hash = aux::to_hex(msg_hash);
+		std::cout << hash << std::endl;
+
+		//time
+		std::stringstream ss_time;
+		ss_time << time;
+		std::cout << ss_time.str() << std::endl;
+
+		//status
+		std::stringstream ss_status;
+		ss_status << status;
+		std::cout << ss_status.str() << std::endl;
+
+		/*
+	      update ChatMsgLOgs		
+		*/
+        std::string sql = "UPDATE ChatMsgLogs SET status = ";
+		sql += ss_status.str() + ", timestamp = " +
+			   ss_time.str() + " WHERE hash = \"" +
+			   hash + "\"";
+			
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql update new msg chatmsglogs error" << std::endl;
+        	return false;
+		}
+		
 		return true;
 	}
 
@@ -246,7 +373,7 @@ namespace libTAU {
 		std::cout << sql << std::endl;
 
 		char *err_msg = nullptr;
-        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
         if (ok != SQLITE_OK) {
             sqlite3_free(err_msg);
 			std::cout << "sql insert new community error" << std::endl;
@@ -263,7 +390,7 @@ namespace libTAU {
 			   key + "\", 0, 0, 0, 0)";
 			std::cout << sql << std::endl;
 			char *err_msg = nullptr;
-        	int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        	int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
         	if (ok != SQLITE_OK) {
             	sqlite3_free(err_msg);
 				std::cout << "sql insert new member error" << std::endl;
@@ -288,7 +415,7 @@ namespace libTAU {
 		std::cout << sql << std::endl;
 
 		char *err_msg = nullptr;
-        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
         if (ok != SQLITE_OK) {
             sqlite3_free(err_msg);
 			std::cout << "sql delete community error" << std::endl;
@@ -299,7 +426,7 @@ namespace libTAU {
 		sql = "DELETE FROM Members WHERE chainID = ";
 		sql += "\"" + chain_id + "\")";
 		std::cout << sql << std::endl;
-       	ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+       	ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
        	if (ok != SQLITE_OK) {
            	sqlite3_free(err_msg);
 			std::cout << "sql delete members error" << std::endl;
@@ -308,7 +435,7 @@ namespace libTAU {
         return true;
 	}
 
-	bool tau_shell_sql::db_add_new_transaction(const blockchain::transaction& tx)
+	bool tau_shell_sql::db_add_new_transaction(const blockchain::transaction& tx, int status, std::int64_t block_number)
 	{
 	 	std::string hash = aux::to_hex(tx.sha256());
 		std::cout << hash << std::endl;
@@ -357,6 +484,16 @@ namespace libTAU {
 		payload.insert(payload.end(), p.begin(), p.end());
 		std::cout << payload << std::endl;
 
+		//status
+		std::stringstream tx_status;
+		tx_status << status;
+		std::cout << tx_status.str() << std::endl;
+
+		//blocknumber
+		std::stringstream tx_bn;
+		tx_bn << block_number;
+		std::cout << tx_bn.str() << std::endl;
+
         std::string sql = "INSERT INTO Txs VALUES(";
 		sql += "\"" + hash + "\", \"" + 
 			   chain_id + "\", \"" +
@@ -364,17 +501,115 @@ namespace libTAU {
 			   tx_fee.str() + ", " + 
                tx_time.str() + ", " +
 			   tx_nonce.str() + ", 0, \"" + 
-			   payload + "\", 0, 0, \"" +
+			   payload + "\", " +
+			   tx_status.str() + ", "+
+			   tx_bn.str()+ ", \"" +
 			   receiver + "\", " +
 			   tx_amount.str() + ", 0)";
-			
 		std::cout << sql << std::endl;
 
 		char *err_msg = nullptr;
-        int ok = sqlite3_exec(m_sqldb, sql.data(), nullptr, nullptr, &err_msg);
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
         if (ok != SQLITE_OK) {
             sqlite3_free(err_msg);
 			std::cout << "sql insert new tx error" << std::endl;
+        	return false;
+		}
+
+		return true;
+	}
+
+	bool tau_shell_sql::db_add_new_block(const blockchain::block& blk)
+	{
+		//hash
+	 	std::string hash = aux::to_hex(blk.sha256());
+		std::cout << hash << std::endl;
+
+		//chain_id
+		std::string chain_id;
+		chain_id.insert(chain_id.end(), blk.chain_id().begin(), blk.chain_id().end());
+
+		//timestamp
+		std::int64_t bt = blk.timestamp();
+		std::stringstream blk_time;
+		blk_time << bt;
+		std::cout << blk_time.str() << std::endl;
+
+		//blocknumber
+		std::int64_t bn = blk.block_number();
+		std::stringstream blk_number;
+		blk_number << bn;
+		std::cout << blk_number.str() << std::endl;
+
+		//difficulty
+		std::uint64_t bcd = blk.cumulative_difficulty();
+		std::stringstream blk_cd;
+		blk_cd << bcd;
+		std::cout << blk_cd.str() << std::endl;
+			
+		//miner
+ 		dht::public_key miner_pubkey = blk.miner();
+		std::string miner = aux::toHex(miner_pubkey.bytes);
+		std::cout << miner << std::endl;
+
+		//tx
+		blockchain::transaction tx = blk.tx();
+		this->db_add_new_transaction(tx, 1, bn);
+
+		//reward
+		std::int64_t br = tx.fee();
+		std::stringstream blk_reward;
+		blk_reward << br;
+		std::cout << blk_reward.str() << std::endl;
+
+        std::string sql = "INSERT INTO Blocks VALUES(";
+		sql += "\"" + chain_id + "\", \"" + 
+			   hash + "\", " +
+			   blk_number.str() + ", \"" + 
+               miner+ "\", " +
+			   blk_reward.str() + ", " + 
+			   blk_cd.str() + ", 0)";
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql insert new blk error" << std::endl;
+        	return false;
+		}
+
+		return true;
+	}
+
+	bool tau_shell_sql::db_update_community_status(const blockchain::block& blk, int type)
+	{
+		//chain_id
+		std::string chain_id;
+		chain_id.insert(chain_id.end(), blk.chain_id().begin(), blk.chain_id().end());
+
+		//blocknumber
+		std::int64_t bn = blk.block_number();
+		std::stringstream blk_number;
+		blk_number << bn;
+		std::cout << blk_number.str() << std::endl;
+
+        std::string sql;
+		if(0 == type) {
+        	sql = "UPDATE Communities SET headBlock = ";
+		} else if (1 == type) {
+        	sql = "UPDATE Communities SET tailBlock = ";
+		} else {
+        	sql = "UPDATE Communities SET consensusBlock = ";
+		}
+		sql += blk_number.str() + ")";
+		std::cout << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql update community status error" << std::endl;
         	return false;
 		}
 

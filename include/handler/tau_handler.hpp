@@ -109,7 +109,7 @@ namespace libTAU
 		session& m_ses;
 		dht::public_key& m_pubkey;
 		dht::secret_key& m_seckey;
-		tau_shell_sql* m_sqldb;
+		tau_shell_sql* m_db;
 		auth_interface const* m_auth;
 	};
 }

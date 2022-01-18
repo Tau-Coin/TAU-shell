@@ -206,7 +206,7 @@ void tau_handler::add_new_friend(std::vector<char>& buf, jsmntok_t* args, std::i
 
     //add in db
     std::cout << "Add sqldb" << std::endl;
-    m_sqldb->db_add_new_friend(friend_pubkey_hex_char);
+    m_db->db_add_new_friend(friend_pubkey_hex_char);
     appendf(buf, "{ \"result\": \"Add New Friend\": %s \"OK\"}", friend_pubkey_hex_char);
 }
 
@@ -221,7 +221,7 @@ void tau_handler::delete_friend(std::vector<char>& buf, jsmntok_t* args, std::in
     m_ses.delete_friend(friend_pubkey);
 
     //delete in db
-    m_sqldb->db_delete_friend(friend_pubkey_char);
+    m_db->db_delete_friend(friend_pubkey_char);
     appendf(buf, "{ \"result\": \"Delete Friend\": %s \"OK\"}", friend_pubkey_hex_char);
 }
 
@@ -273,7 +273,7 @@ void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int6
     m_ses.add_new_message(msg);
     
     //insert friend info
-    m_sqldb->db_add_new_message(msg);
+    m_db->db_add_new_message(msg);
 }
 
 //blockchain
@@ -330,7 +330,7 @@ void tau_handler::follow_chain(std::vector<char>& buf, jsmntok_t* args, std::int
     m_ses.follow_chain(cu);
 
     //save chain into db
-    m_sqldb->db_follow_chain(chain_id_hex_str, peer_list);
+    m_db->db_follow_chain(chain_id_hex_str, peer_list);
     appendf(buf, "{\"Follow Chain Id\": %s \"OK\"}", chain_id_hex_str.data());
 }
 
@@ -354,7 +354,7 @@ void tau_handler::unfollow_chain(std::vector<char>& buf, jsmntok_t* args, std::i
     m_ses.unfollow_chain(chain_id);
 
     //save chain into db
-    m_sqldb->db_unfollow_chain(chain_id_hex_str);
+    m_db->db_unfollow_chain(chain_id_hex_str);
     appendf(buf, "{\"Unfollow Chain Id\": %s \"OK\"}", chain_id_hex);
 
 }
@@ -425,11 +425,13 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
 
     blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, sender_pubkey, receiver_pubkey, nonce, amount, fee, payload);
 
-	//sign
+	//construct and sign
     m_ses.submit_transaction(tx);
+
+	tx.sign(m_pubkey, m_seckey);
     
     //insert friend info
-    m_sqldb->db_add_new_transaction(tx);
+    m_db->db_add_new_transaction(tx);
     
 }
 
@@ -579,7 +581,7 @@ void tau_handler::get_block_by_hash(std::vector<char>& buf, jsmntok_t* args, std
 
 tau_handler::tau_handler(session& s, tau_shell_sql* sqldb, auth_interface const* auth, dht::public_key& pubkey, dht::secret_key& seckey)
     : m_ses(s)
-    , m_sqldb(sqldb)
+    , m_db(sqldb)
     , m_auth(auth)
 	, m_pubkey(pubkey)
 	, m_seckey(seckey)
