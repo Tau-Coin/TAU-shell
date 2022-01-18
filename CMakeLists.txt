@@ -21,6 +21,10 @@ add_executable(main src/main.cpp)
 target_link_libraries(main TAU)
 
 #sub rpc
+add_subdirectory(src/util)
+target_link_libraries(main util)
+
+#sub rpc
 add_subdirectory(src/rpc)
 target_link_libraries(main rpc)
 

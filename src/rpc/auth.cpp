@@ -31,10 +31,10 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "rpc/auth.hpp"
+#include "util/base64.hpp"
 
 #include "libTAU/hasher.hpp"
 #include "libTAU/hex.hpp"
-#include "rpc/base64.hpp"
 
 extern "C" {
 #include "rpc/local_mongoose.h"

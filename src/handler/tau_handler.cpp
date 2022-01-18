@@ -30,11 +30,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "handler/hex_util.hpp"
-#include "handler/tau_constants.hpp"
 #include "handler/tau_handler.hpp"
-#include "rpc/json_util.hpp"
-#include "rpc/base64.hpp"
+
+#include "util/base64.hpp"
+#include "util/escape_json.hpp" // for escape_json
+#include "util/hex_util.hpp"
+#include "util/json_util.hpp"
+#include "util/response_buffer.hpp" // for appendf
+#include "util/tau_constants.hpp"
 
 #include <string.h> // for strcmp()
 #include <stdio.h>
@@ -46,7 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 extern "C" {
 #include "rpc/local_mongoose.h"
-#include "rpc/jsmn.h"
+#include "util/jsmn.h"
 }
 
 #include "libTAU/session.hpp"
@@ -55,8 +58,6 @@ extern "C" {
 #include "libTAU/blockchain/transaction.hpp"
 #include "libTAU/communication/message.hpp"
 #include "libTAU/blockchain/block.hpp"
-#include "handler/response_buffer.hpp" // for appendf
-#include "handler/escape_json.hpp" // for escape_json
 
 using namespace libTAU;
 
@@ -97,6 +98,9 @@ static method_handler handlers[] =
     {"create-new-community", &tau_handler::create_new_community},
     {"follow-chain", &tau_handler::follow_chain},
     {"unfollow-chain", &tau_handler::unfollow_chain},
+    {"get-median-tx-fee", &tau_handler::get_median_tx_fee},
+    {"get-block-by-number", &tau_handler::get_block_by_number},
+    {"get-block-by-hash", &tau_handler::get_block_by_hash},
 };
 
 void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)

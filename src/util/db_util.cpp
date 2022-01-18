@@ -6,11 +6,12 @@
 #include <stdio.h>
 
 extern "C" {
-#include "rpc/jsmn.h"
+#include "util/jsmn.h"
 }
 
-#include "handler/db_util.hpp"
-#include "rpc/json_util.hpp"
+#include "util/db_util.hpp"
+#include "util/json_util.hpp"
+
 #include "libTAU/hex.hpp"
 #include "libTAU/blockchain/constants.hpp"
 

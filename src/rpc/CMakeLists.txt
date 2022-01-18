@@ -4,13 +4,11 @@ include_directories(../../include)
 add_library(rpc "")
 target_link_libraries(rpc dl)
 target_link_libraries(rpc pthread)
+target_link_libraries(rpc util)
 target_sources(rpc 
   PRIVATE
 	mongoose
-	json_util
 	jsmn
-	cdecode
-	base64
 	webui
 	auth
 )

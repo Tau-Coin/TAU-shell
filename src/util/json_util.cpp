@@ -31,10 +31,11 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-#include "rpc/json_util.hpp"
 #include <iostream> // for strcmp()
 #include <string.h> // for strcmp()
 #include <stdlib.h> // for strtoll()
+
+#include "util/json_util.hpp"
 
 namespace libTAU {
 

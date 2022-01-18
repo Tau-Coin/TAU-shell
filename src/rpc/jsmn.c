@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "rpc/jsmn.h"
+#include "util/jsmn.h"
 
 /**
  * Allocates a fresh unused token from the token pull.

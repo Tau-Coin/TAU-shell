@@ -1,6 +1,6 @@
 #include <string>
 
-#include "handler/db_util.hpp"
+#include "util/db_util.hpp"
 
 #include "libTAU/alert.hpp"
 #include "libTAU/alert_types.hpp"

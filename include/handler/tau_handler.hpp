@@ -35,14 +35,15 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define INT64_FMT  "I64d"
 
-#include "handler/db_util.hpp"
 #include "rpc/auth.hpp"
 #include "rpc/webui.hpp"
+#include "util/db_util.hpp"
+
 #include "libTAU/session.hpp"
 #include "libTAU/kademlia/types.hpp"
 
 extern "C" {
-#include "rpc/jsmn.h"
+#include "util/jsmn.h"
 }
 
 #include <vector>

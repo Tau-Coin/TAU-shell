@@ -3,11 +3,11 @@
 #include <sqlite3.h>
 
 #include "rpc/webui.hpp"
-#include "handler/hex_util.hpp"
-#include "handler/db_util.hpp"
-#include "handler/tau_constants.hpp"
 #include "handler/alert_handler.hpp"
 #include "handler/tau_handler.hpp"
+#include "util/hex_util.hpp"
+#include "util/db_util.hpp"
+#include "util/tau_constants.hpp"
 
 #include "libTAU/aux_/ed25519.hpp"
 #include "libTAU/alert.hpp"

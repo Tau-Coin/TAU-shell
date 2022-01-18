@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 
 extern "C" {
-#include "rpc/cdecode.h"
+#include "util/cdecode.h"
 }
 
 namespace libTAU

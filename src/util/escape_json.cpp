@@ -38,7 +38,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <mutex>
 
-#include "handler/escape_json.hpp"
+#include "util/escape_json.hpp"
+
 #include "libTAU/assert.hpp"
 
 namespace libTAU
