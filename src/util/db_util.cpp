@@ -103,7 +103,7 @@ namespace libTAU {
 			int tn_size = table_name->end - table_name->start + 1;
 			char *tn = new char[tn_size];
 			memcpy(tn, &sql_info[table_name->start], tn_size);
-			
+
 			jsmntok_t* sql_table = find_key_in_array(tokens, &sql_info[0], "createSql", i , 2048, JSMN_STRING);
 			if(!sql_table) {
 				std::cout << "no key: createSql in config file" << std::endl;
@@ -302,9 +302,8 @@ namespace libTAU {
 	      insert into ChatMsgLOgs		
 		*/
         sql = "INSERT INTO ChatMsgLogs VALUES(";
-		sql += "\"" + hash + "\", \"" + 
-			   sender + "\", \"" +
-			   ss_status.str() + "\", " +
+		sql += "\"" + hash + "\", " + 
+			   ss_status.str() + ", " +
 			   time_stamp.str() + ")";
 			
 		std::cout << sql << std::endl;

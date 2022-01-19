@@ -599,18 +599,6 @@
           ],
           "autoGenerate": false
         },
-        "indices": [
-          {
-            "name": "index_ChatMessages_timestamp_logicMsgHash",
-            "unique": false,
-            "columnNames": [
-              "timestamp",
-              "logicMsgHash"
-            ],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_ChatMessages_timestamp_logicMsgHash` ON `${TABLE_NAME}` (`timestamp`, `logicMsgHash`)"
-          }
-        ],
-        "foreignKeys": []
       },
       {
         "tableName": "ChatMsgLogs",
