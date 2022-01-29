@@ -101,6 +101,7 @@ static method_handler handlers[] =
     {"get-median-tx-fee", &tau_handler::get_median_tx_fee},
     {"get-block-by-number", &tau_handler::get_block_by_number},
     {"get-block-by-hash", &tau_handler::get_block_by_hash},
+    {"send-data", &tau_handler::send_data},
 };
 
 void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
@@ -213,6 +214,7 @@ void tau_handler::add_new_friend(std::vector<char>& buf, jsmntok_t* args, std::i
     m_db->db_add_new_friend(friend_pubkey_hex_char);
     appendf(buf, "{ \"result\": \"Add New Friend\": %s \"OK\"}", friend_pubkey_hex_char);
 }
+
 
 void tau_handler::delete_friend(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
@@ -581,6 +583,44 @@ void tau_handler::get_block_by_hash(std::vector<char>& buf, jsmntok_t* args, std
     blockchain::block block = m_ses.get_block_by_hash(chain_id, hash);
 
     appendf(buf, block.to_string().c_str());
+}
+
+//send
+void tau_handler::send_data(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* f = find_key(args, buffer, "receiver", JSMN_STRING);
+    jsmntok_t* p = find_key(args, buffer, "payload", JSMN_STRING);
+    jsmntok_t* a = find_key(args, buffer, "alpha", JSMN_PRIMITIVE);
+    jsmntok_t* b = find_key(args, buffer, "beta", JSMN_PRIMITIVE);
+    jsmntok_t* i = find_key(args, buffer, "invoke_limit", JSMN_PRIMITIVE);
+
+    //receiver
+    buffer[f->end] = 0;
+    char const* receiver_pubkey_hex_char = &buffer[f->start];
+    char* receiver_pubkey_char = new char[KEY_LEN];
+    std::cout << "Receiver: " << receiver_pubkey_hex_char << std::endl;
+    hex_char_to_bytes_char(receiver_pubkey_hex_char, receiver_pubkey_char, KEY_HEX_LEN);
+    dht::public_key receiver_pubkey(receiver_pubkey_char);
+
+    //entry
+    buffer[p->end] = 0;
+    char const* payload = &buffer[p->start];
+    std::cout << "Payload: " << payload << std::endl;
+    entry e(payload);
+
+    //alpha
+    std::int8_t alpha = atoi(buffer + a->start);
+    std::cout << alpha << std::endl;
+
+    //beta
+    std::int8_t beta = atoi(buffer + b->start);
+    std::cout << beta << std::endl;
+
+    //invoke_limit
+    std::int8_t invoke_limit = atoi(buffer + i->start);
+    std::cout << invoke_limit << std::endl;
+
+    m_ses.send(receiver_pubkey, e, alpha, beta, invoke_limit);
 }
 
 tau_handler::tau_handler(session& s, tau_shell_sql* sqldb, auth_interface const* auth, dht::public_key& pubkey, dht::secret_key& seckey)

@@ -8,8 +8,9 @@
 
 #curl -H "Content-Type: application/json" -X POST  --data '{"method":"get-friend-info", "arguments":{"friend": "63ec42130442c91e23d56dc73708e06eb164883ab74c9813764c3fd0e2042dc4"}}' http://localhost:8080/rpc ;
 
-curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"add-new-message", "arguments":{"sender": "63ec42130442c91e23d56dc73708e06eb164883ab74c9813764c3fd0e2042dc4", "receiver": "63ec42130442c91e23d56dc73708e06eb164883ab74c9813764c3fd0e2042dc4", "payload": "TAU, Hello"}}' http://localhost:8080/rpc ;
+#curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"add-new-message", "arguments":{"sender": "63ec42130442c91e23d56dc73708e06eb164883ab74c9813764c3fd0e2042dc4", "receiver": "63ec42130442c91e23d56dc73708e06eb164883ab74c9813764c3fd0e2042dc4", "payload": "TAU, Hello"}}' http://localhost:8080/rpc ;
 
+curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"send-data", "arguments":{"receiver": "809df518ee450ded0a659aeb4bc5bec636e2cff012fc88d343b7419af974bb81", "payload": "TAU, Hello", "alpha": 1, "beta": 1, "invoke_limit": 1}}' http://localhost:8080/rpc ;
 
 #curl -H "Content-Type: application/json" -X POST  --data '{"method":"create-chain-id", "arguments":{"community_name": "TestChain"}}' http://localhost:8080/rpc ;
 

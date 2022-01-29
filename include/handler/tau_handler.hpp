@@ -102,6 +102,8 @@ namespace libTAU
 
 		void get_block_by_hash(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
+        void send_data(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer);
+
 	private:
 
 		void handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens, char* buffer);

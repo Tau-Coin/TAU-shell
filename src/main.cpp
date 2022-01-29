@@ -269,7 +269,7 @@ int main(int argc, char *const argv[])
         for (std::vector<alert*>::iterator i = alert_queue.begin()
             , end(alert_queue.end()); i != end; ++i)
         {
-            //std::cout << (*i)->message().c_str() << std::endl;
+            std::cout << (*i)->message().c_str() << std::endl;
             //std::cout << (*i)->type() <<  " " << log_alert::alert_type << std::endl;
             int alert_type = (*i)->type();
             switch(alert_type){
