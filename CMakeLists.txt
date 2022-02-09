@@ -9,9 +9,9 @@ add_definitions(-D TORRENT_USE_OPENSSL)
 
 add_definitions(-D TORRENT_USE_LIBCRYPTO)
 
-include_directories("/home/cowtc/data/libTAU-build/openssl/include" "/home/cowtc/data/libTAU-build/boost" "/home/cowtc/data/libTAU-build/sqlite/include" "/usr/local/include")
+include_directories($ENV{OPENSSL_ROOT}/include $ENV{BOOST_ROOT} $ENV{SQLITE_ROOT}/include "/usr/local/include")
 
-link_directories("/home/cowtc/data/libTAU-build/boost/lib" "/home/cowtc/data/libTAU-build/openssl/lib" "/home/cowtc/data/libTAU-build/sqlite/lib" "/usr/local/lib")
+link_directories($ENV{BOOST_ROOT}/lib $ENV{OPENSSL_ROOT}/lib $ENV{SQLITE_ROOT}/lib "/usr/local/lib")
 
 include_directories(include)
 

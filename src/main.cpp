@@ -235,6 +235,13 @@ int main(int argc, char *const argv[])
     //account seed
     sp_set.set_str(settings_pack::account_seed, account_seed);
 
+    //listen port
+    std::stringstream listen_interfaces;
+    //std::string listen_interfaces = "0.0.0.0:6881,[::]:6881";
+    listen_interfaces << "0.0.0.0:" << listen_port << ",[::]:" << listen_port;
+    std::cout << "listen port: " << listen_interfaces.str() << std::endl;
+    sp_set.set_str(settings_pack::listen_interfaces, listen_interfaces.str());
+
     session_params sp_param(sp_set) ;
     
     session ses(sp_param);

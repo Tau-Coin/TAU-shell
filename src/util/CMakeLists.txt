@@ -12,12 +12,6 @@ add_definitions(-D TORRENT_USE_LIBCRYPTO)
 include_directories(../../include)
 add_library(util "")
 
-#link tau lib
-
-include_directories("/home/cowtc/data/libTAU-build/openssl/include" "/home/cowtc/data/libTAU-build/boost" "/home/cowtc/data/libTAU-build/sqlite/include" "/usr/local/include")
-
-link_directories("/home/cowtc/data/libTAU-build/boost/lib" "/home/cowtc/data/libTAU-build/openssl/lib" "/home/cowtc/data/libTAU-build/sqlite/lib" "/usr/local/lib")
-
 target_link_libraries(util TAU)
 
 target_link_libraries(util dl)
