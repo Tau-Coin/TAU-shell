@@ -45,7 +45,8 @@ struct option cmd_line_options[] =
     {"initial",              no_argument,          NULL, 'i'},
     {"listen-port",       required_argument,   NULL, 'l'},
     {"rpc-port",          required_argument,   NULL, 'r'},
-    {"save-dir",          required_argument,   NULL, 's'},
+    {"shell-save-dir",required_argument,   NULL, 's'},
+    {"libTAU-save-dir",   no_argument,         NULL, 't'},
     {"error-log",         required_argument,   NULL, 'e'},
     {"debug-log",         required_argument,   NULL, 'u'},
     {"help",              no_argument,         NULL, 'h'},
@@ -61,7 +62,8 @@ void print_usage()
         "-i, --initial\n"
         "-l, --listen-port      <libTAU listen port>\n"
         "-r, --rpc-port         <rpc listen port>\n"
-        "-s, --save-dir         <download directory>\n"
+        "-s, --shell-save-dir   <shell download directory>\n"
+        "-t, --libTAU-save-dir  <libTAU download directory>\n"
         "-e, --error-log        <error log filename>\n"
         "-u, --debug-log        <debug log filename>\n"
         "-h, --help\n"
@@ -81,12 +83,13 @@ int main(int argc, char *const argv[])
 
     std::string config_file;
     std::string pid_file;
-    std::string save_path;
+    std::string shell_save_path;
+    std::string tau_save_path=".libTAU";
     std::string error_log;
     std::string debug_log;
 
     int ch = 0;
-    while ((ch = getopt_long(argc, argv, "c:p:d:i:l:r:s:e:u:", cmd_line_options, NULL)) != -1)
+    while ((ch = getopt_long(argc, argv, "c:p:d:i:l:r:s:t:e:u:", cmd_line_options, NULL)) != -1)
     {
         std::cout << ch << std::endl;
         switch (ch)
@@ -97,7 +100,8 @@ int main(int argc, char *const argv[])
             case 'i': initial = true; break;
             case 'l': listen_port = atoi(optarg); break;
             case 'r': rpc_port = atoi(optarg); break;
-            case 's': save_path = optarg; break;
+            case 's': shell_save_path = optarg; break;
+            case 't': tau_save_path = optarg; break;
             case 'e': error_log = optarg; break;
             case 'u': debug_log = optarg; break;
             default:
@@ -114,7 +118,7 @@ int main(int argc, char *const argv[])
     std::cout << "pid file: " << pid_file << std::endl;
     std::cout << "listen port: " << listen_port << std::endl;
     std::cout << "rpc port: " << rpc_port << std::endl;
-    std::cout << "save path: " << save_path << std::endl;
+    std::cout << "save path: " << shell_save_path << std::endl;
     std::cout << "error log file: " << error_log << std::endl;
     std::cout << "debug log file: " << debug_log << std::endl;
     std::cout << "Initial CMD Parameters Over" << std::endl;
@@ -185,7 +189,7 @@ int main(int argc, char *const argv[])
 
     // open db for message store
     std::string home_dir = std::filesystem::path(getenv("HOME")).string();
-    std::string const& sqldb_dir = home_dir + save_path + "/TAU";
+    std::string const& sqldb_dir = home_dir + shell_save_path + "/TAU";
     std::string const& sqldb_path = sqldb_dir + "/tau_sql.db";
 
     // create the directory for storing sqldb data
@@ -241,6 +245,10 @@ int main(int argc, char *const argv[])
     listen_interfaces << "0.0.0.0:" << listen_port << ",[::]:" << listen_port;
     std::cout << "listen port: " << listen_interfaces.str() << std::endl;
     sp_set.set_str(settings_pack::listen_interfaces, listen_interfaces.str());
+
+    //tau save path
+    std::cout << "libTAU save paht: " << tau_save_path << std::endl;
+    sp_set.set_str(settings_pack::db_dir, tau_save_path.c_str());
 
     session_params sp_param(sp_set) ;
     
