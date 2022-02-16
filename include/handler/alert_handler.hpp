@@ -14,6 +14,8 @@ namespace libTAU {
 	{
 		alert_handler(tau_shell_sql* db);
 
+        void alert_on_session_stats(alert* i);
+
 		//communication
 		void alert_on_new_device_id(alert* i);
 

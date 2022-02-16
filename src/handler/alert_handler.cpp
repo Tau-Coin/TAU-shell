@@ -13,6 +13,8 @@ extern "C" {
 #include "util/json_util.hpp"
 
 #include "libTAU/hex.hpp"
+#include "libTAU/span.hpp"
+#include "libTAU/performance_counters.hpp"
 #include "libTAU/blockchain/constants.hpp"
 
 namespace libTAU {
@@ -20,6 +22,13 @@ namespace libTAU {
 	alert_handler::alert_handler(tau_shell_sql* db)
 	: m_db(db)	
 	{
+	}
+
+	void alert_handler::alert_on_session_stats(alert* i){
+        session_stats_alert* a = reinterpret_cast<session_stats_alert*>(i);
+        span<std::int64_t const> sc = a -> counters();
+        std::cout << "session nodes number: " << sc[counters::dht_nodes] << std::endl;
+		return;
 	}
 
 	void alert_handler::alert_on_new_device_id(alert* i){

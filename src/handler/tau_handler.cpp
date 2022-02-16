@@ -54,6 +54,7 @@ extern "C" {
 
 #include "libTAU/session.hpp"
 #include "libTAU/session_status.hpp"
+#include "libTAU/performance_counters.hpp"
 #include "libTAU/aux_/common_data.h"
 #include "libTAU/blockchain/transaction.hpp"
 #include "libTAU/communication/message.hpp"
@@ -148,37 +149,8 @@ void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , ch
 void tau_handler::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
     // TODO: post session stats instead, and capture the performance counters
-    std::cout << "Session Stats In TAU WebUI 0" << std::endl;
-    session_status st = m_ses.status();
-    std::cout << "Session Stats In TAU WebUI 1" << std::endl;
-
-    appendf(buf, "{ \"result\": \"success\", \"tag\": %" "I64d" ", "
-        "\"arguments\": { "
-        "\"uploadSpeed\": %d,"
-        "\"cumulative-stats\": {"
-            "\"uploadedBytes\": %" "I64d" ","
-            "\"downloadedBytes\": %" "I64d" ","
-            "\"sessionCount\": %d,"
-            "\"secondsActive\": %d"
-            "},"
-        "\"current-stats\": {"
-            "\"uploadedBytes\": %" "I64d" ","
-            "\"downloadedBytes\": %" "I64d" ","
-            "\"sessionCount\": %d,"
-            "\"secondsActive\": %d"
-            "}"
-        "}}", tag
-        , st.payload_upload_rate
-        // cumulative-stats (not supported)
-        , st.total_payload_upload
-        , st.total_payload_download
-        , 1
-        , time(nullptr) - m_start_time
-        // current-stats
-        , st.total_payload_upload
-        , st.total_payload_download
-        , 1
-        , time(nullptr) - m_start_time);
+    m_ses.post_session_stats();
+    appendf(buf, "{ \"result\": \"post session status success\"}\n");
 }
 
 //communication apis

@@ -288,6 +288,9 @@ int main(int argc, char *const argv[])
             //std::cout << (*i)->type() <<  " " << log_alert::alert_type << std::endl;
             int alert_type = (*i)->type();
             switch(alert_type){
+                case session_stats_alert::alert_type: 
+                    a_handler.alert_on_session_stats(*i);
+                    break;
                 case log_alert::alert_type: 
                     fprintf(debug_file, " %s\n", (*i)->message().c_str());
                     break;
