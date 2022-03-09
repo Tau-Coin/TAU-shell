@@ -246,27 +246,29 @@ namespace libTAU {
 	 	std::string hash = aux::to_hex(msg.sha256());
 		std::cout << hash << std::endl;
 
+        std::cout << "========New=====Msg========Alert=========" << std::endl;
 		//timestamp
 		std::int64_t ts = msg.timestamp();
 		std::stringstream time_stamp;
 		time_stamp << ts;
-		std::cout << time_stamp.str() << std::endl;
+		std::cout << "Time In Msg: " << time_stamp.str() << std::endl;
 
 		//sender
  		dht::public_key sender_pubkey = msg.sender();
 		std::string sender = aux::toHex(sender_pubkey.bytes);
-		std::cout << sender << std::endl;
+		std::cout << "Sender In Msg: " << sender << std::endl;
 
 		//receiver
  		dht::public_key receiver_pubkey = msg.receiver();
 		std::string receiver = aux::toHex(receiver_pubkey.bytes);
-		std::cout << receiver << std::endl;
+		std::cout << "Receiver In Msg: " << receiver << std::endl;
 
 		//payload
 		std::string payload;
 		aux::bytes p = msg.payload();
 		payload.insert(payload.end(), p.begin(), p.end());
-		std::cout << payload << std::endl;
+		std::cout << "Payload In Msg: " << payload << std::endl;
+        std::cout << "=========================================" << std::endl;
 
 		/*
 	      insert into ChatMessages		

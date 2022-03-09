@@ -189,7 +189,7 @@ int main(int argc, char *const argv[])
 
     // open db for message store
     std::string home_dir = std::filesystem::path(getenv("HOME")).string();
-    std::string const& sqldb_dir = home_dir + shell_save_path + "/TAU";
+    std::string const& sqldb_dir = home_dir + shell_save_path;
     std::string const& sqldb_path = sqldb_dir + "/tau_sql.db";
 
     // create the directory for storing sqldb data
@@ -246,8 +246,12 @@ int main(int argc, char *const argv[])
     std::cout << "listen port: " << listen_interfaces.str() << std::endl;
     sp_set.set_str(settings_pack::listen_interfaces, listen_interfaces.str());
 
+    //for bs test
+    sp_set.set_int(settings_pack::dht_bootstrap_interval, 10);
+    sp_set.set_int(settings_pack::dht_ping_interval, 10);
+
     //tau save path
-    std::cout << "libTAU save paht: " << tau_save_path << std::endl;
+    std::cout << "libTAU save path: " << tau_save_path << std::endl;
     sp_set.set_str(settings_pack::db_dir, tau_save_path.c_str());
 
     session_params sp_param(sp_set) ;
@@ -275,6 +279,10 @@ int main(int argc, char *const argv[])
     signal(SIGINT, &sighandler);
     signal(SIGPIPE, SIG_IGN);
 
+    //port
+    std::uint16_t port = ses.get_port_from_pubkey(m_pubkey);
+    std::cout << "port: "  << port << std::endl;
+
     std::vector<alert*> alert_queue;
     bool shutting_down = false;
     while (!quit)
@@ -284,7 +292,8 @@ int main(int argc, char *const argv[])
         for (std::vector<alert*>::iterator i = alert_queue.begin()
             , end(alert_queue.end()); i != end; ++i)
         {
-            std::cout << (*i)->message().c_str() << std::endl;
+            std::cout << ses.get_session_time()/1000 << " " << (*i)->message().c_str() << std::endl;
+            //fprintf(debug_file, " %s\n", (*i)->message().c_str());
             //std::cout << (*i)->type() <<  " " << log_alert::alert_type << std::endl;
             int alert_type = (*i)->type();
             switch(alert_type){
@@ -292,20 +301,19 @@ int main(int argc, char *const argv[])
                     a_handler.alert_on_session_stats(*i);
                     break;
                 case log_alert::alert_type: 
-                    fprintf(debug_file, " %s\n", (*i)->message().c_str());
                     break;
                 case dht_log_alert::alert_type:
-                    fprintf(debug_file, " %s\n", (*i)->message().c_str());
                     break;
 				//communication
                 case communication_new_device_id_alert::alert_type:
                     a_handler.alert_on_new_device_id(*i);
                     break;
                 case communication_new_message_alert::alert_type:
+                    std::cout << "New Msg Alert, Timestamp: " << ses.get_session_time() << std::endl;
                     a_handler.alert_on_new_message(*i);
                     break;
                 case communication_confirmation_root_alert::alert_type:
-                    a_handler.alert_on_confirmation_root(*i);
+                    //a_handler.alert_on_confirmation_root(*i);
                     break;
                 case communication_syncing_message_alert::alert_type:
                     a_handler.alert_on_syncing_message(*i);
@@ -317,7 +325,6 @@ int main(int argc, char *const argv[])
                     a_handler.alert_on_last_seen(*i);
                     break;
                 case communication_log_alert::alert_type:
-                    fprintf(debug_file, " %s\n", (*i)->message().c_str());
                     break;
 				//blockchain
                 case blockchain_new_head_block_alert::alert_type:
@@ -352,7 +359,6 @@ int main(int argc, char *const argv[])
             signal(SIGINT, &sighandler_forcequit);
         }
         if (force_quit) break;
-        usleep(100000);
     }
     std::cout << "Cycle Over" << std::endl;
 
