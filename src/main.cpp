@@ -91,7 +91,6 @@ int main(int argc, char *const argv[])
     int ch = 0;
     while ((ch = getopt_long(argc, argv, "c:p:d:i:l:r:s:t:e:u:", cmd_line_options, NULL)) != -1)
     {
-        std::cout << ch << std::endl;
         switch (ch)
         {
             case 'c': config_file = optarg; break;
@@ -241,25 +240,25 @@ int main(int argc, char *const argv[])
 
     //listen port
     std::stringstream listen_interfaces;
-    //std::string listen_interfaces = "0.0.0.0:6881,[::]:6881";
     listen_interfaces << "0.0.0.0:" << listen_port << ",[::]:" << listen_port;
     std::cout << "listen port: " << listen_interfaces.str() << std::endl;
     sp_set.set_str(settings_pack::listen_interfaces, listen_interfaces.str());
-
-    //for bs test
-    sp_set.set_int(settings_pack::dht_bootstrap_interval, 10);
-    sp_set.set_int(settings_pack::dht_ping_interval, 10);
 
     //tau save path
     std::cout << "libTAU save path: " << tau_save_path << std::endl;
     sp_set.set_str(settings_pack::db_dir, tau_save_path.c_str());
 
-    session_params sp_param(sp_set) ;
-    
-    session ses(sp_param);
-    ses.set_alert_mask(~(alert::progress_notification | alert::debug_notification));    
+    //alert mask
+    sp_set.set_int(settings_pack::alert_mask, alert::all_categories);    
+
+    //disable communication and blockchain
+    sp_set.set_bool(settings_pack::enable_communication, false);
+    sp_set.set_bool(settings_pack::enable_blockchain, false);
+
     std::cout << "Session parameters' setting Over" << std::endl;
 
+    session_params sp_param(sp_set) ;
+    session ses(sp_param);
     //定义tau communication handle
     tau_handler t_handler(ses, &tau_sql, &authorizer, m_pubkey, m_seckey);
     alert_handler a_handler(&tau_sql);
@@ -292,7 +291,7 @@ int main(int argc, char *const argv[])
         for (std::vector<alert*>::iterator i = alert_queue.begin()
             , end(alert_queue.end()); i != end; ++i)
         {
-            std::cout << ses.get_session_time()/1000 << " " << (*i)->message().c_str() << std::endl;
+            //std::cout << ses.get_session_time()/1000 << " " << (*i)->message().c_str() << std::endl;
             //fprintf(debug_file, " %s\n", (*i)->message().c_str());
             //std::cout << (*i)->type() <<  " " << log_alert::alert_type << std::endl;
             int alert_type = (*i)->type();
@@ -301,8 +300,10 @@ int main(int argc, char *const argv[])
                     a_handler.alert_on_session_stats(*i);
                     break;
                 case log_alert::alert_type: 
+                    std::cout << ses.get_session_time()/1000 << " SESSION LOG: " << (*i)->message().c_str() << std::endl;
                     break;
                 case dht_log_alert::alert_type:
+                    std::cout << ses.get_session_time()/1000 << " DHT LOG:  " << (*i)->message().c_str() << std::endl;
                     break;
 				//communication
                 case communication_new_device_id_alert::alert_type:
