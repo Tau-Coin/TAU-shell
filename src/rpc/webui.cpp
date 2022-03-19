@@ -30,11 +30,11 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include <deque>
+#include <algorithm>
 #include <getopt.h> // for getopt_long
 #include <stdlib.h> // for daemon()
+#include <string.h>
 #include <syslog.h>
-#include <boost/unordered_map.hpp>
 
 #include "rpc/webui.hpp"
 

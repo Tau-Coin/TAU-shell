@@ -44,8 +44,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <map>
 #include <cstdint>
-#include <boost/tuple/tuple.hpp>
-#include <boost/asio/error.hpp>
 
 extern "C" {
 #include "rpc/local_mongoose.h"

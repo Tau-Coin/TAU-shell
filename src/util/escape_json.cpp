@@ -33,7 +33,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <string.h>
 #include <stdio.h>
-#include <boost/cstdint.hpp>
 #include <iconv.h>
 #include <vector>
 #include <mutex>
@@ -105,4 +104,3 @@ std::string escape_json(std::string const& input)
 }
 
 }
-

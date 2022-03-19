@@ -10,9 +10,11 @@
 #include "util/tau_constants.hpp"
 
 #include "libTAU/aux_/ed25519.hpp"
+#include "libTAU/kademlia/ed25519.hpp"
 #include "libTAU/alert.hpp"
 #include "libTAU/alert_types.hpp"
 #include "libTAU/error_code.hpp"
+#include "libTAU/hex.hpp"
 #include "libTAU/session.hpp"
 #include "libTAU/session_params.hpp"
 #include "libTAU/session_handle.hpp"
@@ -131,17 +133,15 @@ int main(int argc, char *const argv[])
     ec.clear();
 
     //读取device_id, account_seed
-    char device_id[32];
-    char account_seed[64];
-    char bootstrap_nodes[1024];
+    char device_id[KEY_LEN + 1]={}; //used for '\0'
+    char account_seed[KEY_HEX_LEN + 1]={}; //used for '\0'
+    char bootstrap_nodes[1024]={};
     if(!config_file.empty())
     {
         FILE* f = fopen(config_file.c_str(), "r");
         if(f)
         {
-            fscanf(f, "%s\n", device_id);
-            fscanf(f, "%s", account_seed);
-            fscanf(f, "%s", bootstrap_nodes);
+            fscanf(f, "%s %s %s", device_id, account_seed, bootstrap_nodes);
             fclose(f);
         }
         else
@@ -156,10 +156,18 @@ int main(int argc, char *const argv[])
 	char* seed = new char[KEY_LEN];
 	char* pubkey = new char[KEY_LEN];
 	char* seckey = new char[KEY_HEX_LEN];
-	hex_char_to_bytes_char(account_seed, seed, KEY_HEX_LEN);
-	aux::ed25519_create_keypair(reinterpret_cast<unsigned char *>(pubkey), 
+    if(!strcmp(account_seed, "null")){
+        //产生随机数
+        auto array_seed = dht::ed25519_create_seed();
+        seed = array_seed.data();
+        aux::to_hex(seed, KEY_LEN, account_seed);
+
+    } else {
+	    hex_char_to_bytes_char(account_seed, seed, KEY_HEX_LEN);
+	    aux::ed25519_create_keypair(reinterpret_cast<unsigned char *>(pubkey), 
 								reinterpret_cast<unsigned char *>(seckey), 
 								reinterpret_cast<unsigned char const*>(account_seed));
+    }
 	dht::public_key m_pubkey(pubkey);	
 	dht::secret_key m_seckey(seckey);	
 
@@ -182,6 +190,7 @@ int main(int argc, char *const argv[])
         }
 
         //as daemon process
+
         daemon(1, 0);
     }
     std::cout << "Initial File Parameters Over" << std::endl;
@@ -231,12 +240,15 @@ int main(int argc, char *const argv[])
 
     //bootstrap nodes
     sp_set.set_str(settings_pack::dht_bootstrap_nodes, bootstrap_nodes);
+    std::cout <<  "bootstrap nodes: " << bootstrap_nodes << std::endl;
 
     //device_id
     sp_set.set_str(settings_pack::device_id, device_id);
+    std::cout <<  "device id: " << device_id << std::endl;
 
     //account seed
     sp_set.set_str(settings_pack::account_seed, account_seed);
+    std::cout <<  "account_seed: " << account_seed << std::endl;
 
     //listen port
     std::stringstream listen_interfaces;
@@ -360,7 +372,9 @@ int main(int argc, char *const argv[])
             signal(SIGINT, &sighandler_forcequit);
         }
         if (force_quit) break;
+        ses.wait_for_alert(libTAU::milliseconds(500));
     }
+
     std::cout << "Cycle Over" << std::endl;
 
     if (debug_file) fclose(debug_file);
