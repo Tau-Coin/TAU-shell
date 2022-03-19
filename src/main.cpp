@@ -24,6 +24,8 @@
 #include <getopt.h> // for getopt_long
 #include <stdlib.h> // for daemon()
 
+const int FILE_LEN = 256;
+
 bool quit = false;
 bool force_quit = false;
 
@@ -59,15 +61,8 @@ void print_usage()
 {
     fputs("libTAU-daemon usage:\n\n"
         "-c, --config           <config filename>\n"
-        "-p, --pid              <pid-filename>\n"
         "-d, --daemonize\n"
         "-i, --initial\n"
-        "-l, --listen-port      <libTAU listen port>\n"
-        "-r, --rpc-port         <rpc listen port>\n"
-        "-s, --shell-save-dir   <shell download directory>\n"
-        "-t, --libTAU-save-dir  <libTAU download directory>\n"
-        "-e, --error-log        <error log filename>\n"
-        "-u, --debug-log        <debug log filename>\n"
         "-h, --help\n"
         "\n"
         , stderr);
@@ -80,49 +75,24 @@ int main(int argc, char *const argv[])
 
     bool daemonize = false;
     bool initial = false;
-    int listen_port = 6881;
-    int rpc_port = 8080;
 
     std::string config_file;
-    std::string pid_file;
-    std::string shell_save_path;
-    std::string tau_save_path=".libTAU";
-    std::string error_log;
-    std::string debug_log;
-
     int ch = 0;
-    while ((ch = getopt_long(argc, argv, "c:p:d:i:l:r:s:t:e:u:", cmd_line_options, NULL)) != -1)
+    while ((ch = getopt_long(argc, argv, "c:d:i", cmd_line_options, NULL)) != -1)
     {
         switch (ch)
         {
             case 'c': config_file = optarg; break;
-            case 'p': pid_file = optarg; break;
             case 'd': daemonize = true; break;
             case 'i': initial = true; break;
-            case 'l': listen_port = atoi(optarg); break;
-            case 'r': rpc_port = atoi(optarg); break;
-            case 's': shell_save_path = optarg; break;
-            case 't': tau_save_path = optarg; break;
-            case 'e': error_log = optarg; break;
-            case 'u': debug_log = optarg; break;
             default:
                 print_usage();
                 return 1;
         }
     }
 
-    argc -= optind;
-    argv += optind;
-
     std::cout << "Configure from cmd line: " << std::endl;
     std::cout << "config file: " << config_file << std::endl;
-    std::cout << "pid file: " << pid_file << std::endl;
-    std::cout << "listen port: " << listen_port << std::endl;
-    std::cout << "rpc port: " << rpc_port << std::endl;
-    std::cout << "save path: " << shell_save_path << std::endl;
-    std::cout << "error log file: " << error_log << std::endl;
-    std::cout << "debug log file: " << debug_log << std::endl;
-    std::cout << "Initial CMD Parameters Over" << std::endl;
 
     error_code ec;
     auth authorizer;
@@ -136,12 +106,26 @@ int main(int argc, char *const argv[])
     char device_id[KEY_LEN + 1]={}; //used for '\0'
     char account_seed[KEY_HEX_LEN + 1]={}; //used for '\0'
     char bootstrap_nodes[1024]={};
+
+    char pid_file[FILE_LEN] = {};
+    char error_log[FILE_LEN] = {};
+    char debug_log[FILE_LEN] = {};
+
+    int listen_port = 6881;
+    int rpc_port = 8080;
+
+    char shell_save_path[FILE_LEN] = {};
+    char tau_save_path[FILE_LEN] = {};
+
     if(!config_file.empty())
     {
         FILE* f = fopen(config_file.c_str(), "r");
         if(f)
         {
-            fscanf(f, "%s %s %s", device_id, account_seed, bootstrap_nodes);
+            fscanf(f, "%s\n %s\n %s\n", device_id, account_seed, bootstrap_nodes);
+            fscanf(f, "%s\n %s\n %s\n", pid_file, error_log, debug_log);
+            fscanf(f, "%d\n %d\n", &listen_port, &rpc_port);
+            fscanf(f, "%s\n %s\n", shell_save_path, tau_save_path);
             fclose(f);
         }
         else
@@ -151,6 +135,15 @@ int main(int argc, char *const argv[])
             exit(1);
         }
     }
+
+    std::cout << "pid file: " << pid_file << std::endl;
+    std::cout << "listen port: " << listen_port << std::endl;
+    std::cout << "rpc port: " << rpc_port << std::endl;
+    std::cout << "shell save path: " << shell_save_path << std::endl;
+    std::cout << "tau save path: " << tau_save_path << std::endl;
+    std::cout << "error log file: " << error_log << std::endl;
+    std::cout << "debug log file: " << debug_log << std::endl;
+    std::cout << "Initial CMD Parameters Over" << std::endl;
 
 	//处理seed
 	char* seed = new char[KEY_LEN];
@@ -174,9 +167,9 @@ int main(int argc, char *const argv[])
     if (daemonize)
     {
         //输出pid
-        if (!pid_file.empty())
+        if (strlen(pid_file) > 0)
         {
-            FILE* f = fopen(pid_file.c_str(), "w+");
+            FILE* f = fopen(pid_file, "w+");
             if (f)
             {
                 fprintf(f, "%d", getpid());
@@ -185,7 +178,7 @@ int main(int argc, char *const argv[])
             else
             {
                 fprintf(stderr, "failed to open pid file \"%s\": %s\n"
-                    , pid_file.c_str(), strerror(errno));
+                    , pid_file, strerror(errno));
             }
         }
 
@@ -222,13 +215,13 @@ int main(int argc, char *const argv[])
 
     // 输出debug日志
     FILE* debug_file = NULL;
-    if (!debug_log.empty())
+    if (strlen(debug_log) > 0)
     {
-        debug_file = fopen(debug_log.c_str(), "w+");
+        debug_file = fopen(debug_log, "w+");
         if (debug_file == NULL)
         {
             fprintf(stderr, "failed to debug log \"%s\": %s\n"
-                , debug_log.c_str(), strerror(errno));
+                , debug_log, strerror(errno));
             exit(1);
         }
     }
@@ -251,6 +244,8 @@ int main(int argc, char *const argv[])
     std::cout <<  "account_seed: " << account_seed << std::endl;
 
     //listen port
+    if(listen_port == 0){
+    }
     std::stringstream listen_interfaces;
     listen_interfaces << "0.0.0.0:" << listen_port << ",[::]:" << listen_port;
     std::cout << "listen port: " << listen_interfaces.str() << std::endl;
@@ -258,7 +253,7 @@ int main(int argc, char *const argv[])
 
     //tau save path
     std::cout << "libTAU save path: " << tau_save_path << std::endl;
-    sp_set.set_str(settings_pack::db_dir, tau_save_path.c_str());
+    sp_set.set_str(settings_pack::db_dir, tau_save_path);
 
     //alert mask
     sp_set.set_int(settings_pack::alert_mask, alert::all_categories);    
