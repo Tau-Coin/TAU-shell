@@ -44,17 +44,9 @@ using namespace libTAU;
 struct option cmd_line_options[] =
 {
     {"config",            required_argument,   NULL, 'c'},
-    {"pid",               required_argument,   NULL, 'p'},
     {"daemonize",         no_argument,         NULL, 'd'},
     {"initial",              no_argument,          NULL, 'i'},
-    {"listen-port",       required_argument,   NULL, 'l'},
-    {"rpc-port",          required_argument,   NULL, 'r'},
-    {"shell-save-dir",required_argument,   NULL, 's'},
-    {"libTAU-save-dir",   no_argument,         NULL, 't'},
-    {"error-log",         required_argument,   NULL, 'e'},
-    {"debug-log",         required_argument,   NULL, 'u'},
     {"help",              no_argument,         NULL, 'h'},
-    {NULL,                0,                   NULL, 0}
 };
 
 void print_usage()
@@ -244,8 +236,6 @@ int main(int argc, char *const argv[])
     std::cout <<  "account_seed: " << account_seed << std::endl;
 
     //listen port
-    if(listen_port == 0){
-    }
     std::stringstream listen_interfaces;
     listen_interfaces << "0.0.0.0:" << listen_port << ",[::]:" << listen_port;
     std::cout << "listen port: " << listen_interfaces.str() << std::endl;
@@ -257,6 +247,9 @@ int main(int argc, char *const argv[])
 
     //alert mask
     sp_set.set_int(settings_pack::alert_mask, alert::all_categories);    
+
+    //referable
+    sp_set.set_bool(settings_pack::dht_non_referrable, false);
 
     //disable communication and blockchain
     sp_set.set_bool(settings_pack::enable_communication, false);
