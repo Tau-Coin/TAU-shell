@@ -248,6 +248,9 @@ int main(int argc, char *const argv[])
     //alert mask
     sp_set.set_int(settings_pack::alert_mask, alert::all_categories);    
 
+    //alert mask
+    sp_set.set_int(settings_pack::dht_item_lifetime, 7200);    
+
     //referable
     sp_set.set_bool(settings_pack::dht_non_referrable, false);
 
