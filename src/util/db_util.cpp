@@ -592,6 +592,7 @@ namespace libTAU {
 
 		//blocknumber
 		std::int64_t bn = blk.block_number();
+		std::string block_hash = "";
 		std::stringstream blk_number;
 		blk_number << bn;
 		std::cout << blk_number.str() << std::endl;
@@ -599,12 +600,14 @@ namespace libTAU {
         std::string sql;
 		if(0 == type) {
         	sql = "UPDATE Communities SET headBlock = ";
+		    sql += blk_number.str() + ", headBlockHash=" + block_hash + ")";
 		} else if (1 == type) {
         	sql = "UPDATE Communities SET tailBlock = ";
+		    sql += blk_number.str() + ", tailBlockHash=" + block_hash + ")";
 		} else {
         	sql = "UPDATE Communities SET consensusBlock = ";
+		    sql += blk_number.str() + ", consensusBlockHash=" + block_hash + ")";
 		}
-		sql += blk_number.str() + ")";
 		std::cout << sql << std::endl;
 
 		char *err_msg = nullptr;

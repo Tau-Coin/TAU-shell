@@ -6,7 +6,7 @@
     "entities": [
       {
         "tableName": "Communities",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`chainID` TEXT NOT NULL, `communityName` TEXT NOT NULL, `headBlock` INTEGER NOT NULL, `tailBlock` INTEGER NOT NULL, `consensusBlock` INTEGER NOT NULL, `isBanned` INTEGER NOT NULL, `forkPoint` TEXT, `topConsensus` TEXT, PRIMARY KEY(`chainID`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`chainID` TEXT NOT NULL, `communityName` TEXT NOT NULL, `headBlock` INTEGER NOT NULL, `tailBlock` INTEGER NOT NULL, `consensusBlock` INTEGER NOT NULL, `headBlockHash` TEXT, `tailBlockHash` TEXT, `consensusBlockHash` TEXT, `isBanned` INTEGER NOT NULL, `forkPoint` TEXT, `topConsensus` TEXT, PRIMARY KEY(`chainID`))",
         "fields": [
           {
             "fieldPath": "chainID",

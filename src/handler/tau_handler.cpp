@@ -379,6 +379,7 @@ void tau_handler::follow_chain_mobile(std::vector<char>& buf, jsmntok_t* args, s
     m_db->db_follow_chain(chain_id_hex, peer_list);
     appendf(buf, "{\"Follow Chain Id\": %s \"OK\"}", chain_id_hex);
 }
+
 void tau_handler::unfollow_chain(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
 {
     jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
@@ -403,6 +404,29 @@ void tau_handler::unfollow_chain(std::vector<char>& buf, jsmntok_t* args, std::i
     appendf(buf, "{\"Unfollow Chain Id\": %s \"OK\"}", chain_id_hex);
 
 }
+
+void tau_handler::get_chain_state(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+
+    //chain_id
+    int size = c->end - c->start + 1;
+    std::cout << size << std::endl;
+    buffer[c->end] = 0;
+    char const* chain_id_hex = &buffer[c->start];
+    std::string chain_id_hex_str;
+    for(int i = c->start; i< c->end; i++) {
+        chain_id_hex_str.push_back(buffer[i]);
+    }   
+    std::vector<char> chain_id;
+    chain_id.reserve(size/2);
+    hex_char_to_bytes_char(chain_id_hex, chain_id.data(), size);
+    
+    m_ses.request_chain_state(chain_id);
+    
+    //get block number and hash
+}
+
 
 void tau_handler::unfollow_chain_mobile(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
