@@ -100,7 +100,7 @@ namespace libTAU {
 		blockchain_new_transaction_alert* a = reinterpret_cast<blockchain_new_transaction_alert*>(i);
 		blockchain::transaction tx = a -> tx;
 
-		// deal with block
+		// deal with tx
 		m_db->db_add_new_transaction(tx);
 	}
 		

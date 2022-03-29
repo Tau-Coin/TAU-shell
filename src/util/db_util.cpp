@@ -9,6 +9,7 @@ extern "C" {
 #include "util/jsmn.h"
 }
 
+#include "util/hex_util.hpp"
 #include "util/db_util.hpp"
 #include "util/json_util.hpp"
 
@@ -360,19 +361,9 @@ namespace libTAU {
 	bool tau_shell_sql::db_follow_chain(const std::string& chain_id, std::set<dht::public_key> peers)
 	{
 
-		std::string community_name_hex_str;
-		for(auto i = chain_id.begin() + blockchain::CHAIN_ID_HASH_MAX_LENGTH * 2; i != chain_id.end(); i++){
-			community_name_hex_str.push_back(*i);
-		}
-		aux::bytes community_name = aux::fromHex(community_name_hex_str);
-		std::cout << "DB Follow Chain Community Name: " << community_name.data() << std::endl;
-
-        std::string sql = "INSERT INTO Communities VALUES(";
-		std::string community_info = "\"" + chain_id + "\", "+ 
-								  "\"" + community_name_hex_str + "\", "+
-								 "0, 0, 0, 0)";
-		sql += community_info;
-		std::cout << sql << std::endl;
+        std::string sql = "INSERT INTO Communities(chainID, communityName, headBlock, tailBlock, consensusBlock) VALUES( \"" + chain_id + "\", "+ 
+								  "\"TAU_SHELL_CHAIN\", 0, 0, 0)";
+		std::cout << "db follow chain: " << sql << std::endl;
 
 		char *err_msg = nullptr;
         int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
@@ -443,8 +434,9 @@ namespace libTAU {
 		std::cout << hash << std::endl;
 
 		//chain_id
-		std::string chain_id;
-		chain_id.insert(chain_id.end(), tx.chain_id().begin(), tx.chain_id().end());
+        auto id = tx.chain_id();
+        std::cout << "new tx, chain id size: " << id.size()  << std::endl;
+		std::string chain_id = bytes_chain_id_to_string(id.data(), id.size());
 
 		//timestamp
 		std::int64_t tt = tx.timestamp();
@@ -480,10 +472,15 @@ namespace libTAU {
 		std::string receiver = aux::toHex(receiver_pubkey.bytes);
 		std::cout << receiver << std::endl;
 
+        //type
+        int type = tx.type();
+		std::stringstream tx_type;
+        tx_type << type;
+		std::cout << tx_type.str() << std::endl;
+
 		//payload
-		std::string payload;
 		aux::bytes p = tx.payload();
-		payload.insert(payload.end(), p.begin(), p.end());
+		std::string payload = aux::toHex(p);
 		std::cout << payload << std::endl;
 
 		//status
@@ -502,12 +499,15 @@ namespace libTAU {
 			   sender + "\", " +
 			   tx_fee.str() + ", " + 
                tx_time.str() + ", " +
-			   tx_nonce.str() + ", 0, \"" + 
+			   tx_nonce.str() + ", " + 
+			   tx_type.str() + ", \"" + 
 			   payload + "\", " +
 			   tx_status.str() + ", "+
 			   tx_bn.str()+ ", \"" +
 			   receiver + "\", " +
-			   tx_amount.str() + ", 0)";
+			   tx_amount.str() + 
+               ", 0, \"TAU\", \"TAU\", \"TAU\")";
+
 		std::cout << sql << std::endl;
 
 		char *err_msg = nullptr;
@@ -528,8 +528,9 @@ namespace libTAU {
 		std::cout << hash << std::endl;
 
 		//chain_id
-		std::string chain_id;
-		chain_id.insert(chain_id.end(), blk.chain_id().begin(), blk.chain_id().end());
+        auto id = blk.chain_id();
+        std::cout << "new block, chain id size: " << id.size()  << std::endl;
+		std::string chain_id = bytes_chain_id_to_string(id.data(), id.size());
 
 		//timestamp
 		std::int64_t bt = blk.timestamp();
@@ -587,12 +588,13 @@ namespace libTAU {
 	bool tau_shell_sql::db_update_community_status(const blockchain::block& blk, int type)
 	{
 		//chain_id
-		std::string chain_id;
-		chain_id.insert(chain_id.end(), blk.chain_id().begin(), blk.chain_id().end());
+        auto id = blk.chain_id();
+        std::cout << "update community, chain id size: " << id.size()  << std::endl;
+		std::string chain_id = bytes_chain_id_to_string(id.data(), id.size());
 
 		//blocknumber
 		std::int64_t bn = blk.block_number();
-		std::string block_hash = "";
+		std::string block_hash = aux::to_hex(blk.sha256());
 		std::stringstream blk_number;
 		blk_number << bn;
 		std::cout << blk_number.str() << std::endl;
@@ -600,14 +602,17 @@ namespace libTAU {
         std::string sql;
 		if(0 == type) {
         	sql = "UPDATE Communities SET headBlock = ";
-		    sql += blk_number.str() + ", headBlockHash=" + block_hash + ")";
+		    sql += blk_number.str() + ", headBlockHash=\"" + block_hash + "\" WHERE chainID=\"";
 		} else if (1 == type) {
         	sql = "UPDATE Communities SET tailBlock = ";
-		    sql += blk_number.str() + ", tailBlockHash=" + block_hash + ")";
+		    sql += blk_number.str() + ", tailBlockHash=\"" + block_hash + "\" WHERE chainID=\"";
 		} else {
         	sql = "UPDATE Communities SET consensusBlock = ";
-		    sql += blk_number.str() + ", consensusBlockHash=" + block_hash + ")";
+		    sql += blk_number.str() + ", consensusBlockHash=\"" + block_hash + "\" WHERE chainID=\"";
 		}
+
+        sql += chain_id + "\"";
+
 		std::cout << sql << std::endl;
 
 		char *err_msg = nullptr;
@@ -621,4 +626,44 @@ namespace libTAU {
 		return true;
 	}
 
+	bool tau_shell_sql::db_get_chain_state(const std::string& chain_id, int* block_number, std::string* block_hash)
+	{
+		//chain_id
+        std::string sql;
+      	sql = "SELECT headBlock, consensusBlock, tailBlock, headBlockHash, consensusBlockHash, tailBlockHash FROM Communities WHERE chainID =\"" + chain_id + "\"";
+		std::cout << sql << std::endl;
+
+        sqlite3_stmt * stmt;
+        int ok = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr);
+        if (ok == SQLITE_OK) {
+            std::cout << "In prepare" << std::endl;
+            for (;sqlite3_step(stmt) == SQLITE_ROW;) {
+                std::cout << "In prepare 0" << std::endl;
+                block_number[0] = sqlite3_column_int(stmt, 0);
+                block_number[1] = sqlite3_column_int(stmt, 1);
+                block_number[2] = sqlite3_column_int(stmt, 2);
+
+                const unsigned char *hash = sqlite3_column_text(stmt, 3);
+                auto length = sqlite3_column_bytes(stmt, 3);
+                std::string value1(hash, hash + length);
+                block_hash[0] = value1;
+                std::cout << "hash 0: " << block_hash[0] << std::endl;
+
+                hash = sqlite3_column_text(stmt, 4);
+                length = sqlite3_column_bytes(stmt, 4);
+                std::string value2(hash, hash + length);
+                block_hash[1] = value2;
+                std::cout << "hash 1: " << block_hash[1] << std::endl;
+
+                hash = sqlite3_column_text(stmt, 4);
+                length = sqlite3_column_bytes(stmt, 4);
+                std::string value3(hash, hash + length);
+                block_hash[2] = value3;
+                std::cout << "hash 2: " << block_hash[2] << std::endl;
+            }
+        } 
+        sqlite3_finalize(stmt);
+
+		return true;
+	}
 }

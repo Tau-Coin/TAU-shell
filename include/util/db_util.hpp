@@ -44,6 +44,8 @@ namespace libTAU {
 
 		bool db_add_new_block(const blockchain::block& blk);
 
+		bool db_get_chain_state(const std::string& chain_id_hex_str, int* block_number, std::string* block_hash);
+
 		bool db_update_community_status(const blockchain::block& blk, int type);
 
 	private:

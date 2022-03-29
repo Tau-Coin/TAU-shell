@@ -256,7 +256,7 @@ int main(int argc, char *const argv[])
 
     //disable communication and blockchain
     sp_set.set_bool(settings_pack::enable_communication, false);
-    sp_set.set_bool(settings_pack::enable_blockchain, false);
+    //sp_set.set_bool(settings_pack::enable_blockchain, false);
 
     std::cout << "Session parameters' setting Over" << std::endl;
 
@@ -303,10 +303,10 @@ int main(int argc, char *const argv[])
                     a_handler.alert_on_session_stats(*i);
                     break;
                 case log_alert::alert_type: 
-                    std::cout << ses.get_session_time()/1000 << " SESSION LOG: " << (*i)->message().c_str() << std::endl;
+                    //std::cout << ses.get_session_time()/1000 << " SESSION LOG: " << (*i)->message().c_str() << std::endl;
                     break;
                 case dht_log_alert::alert_type:
-                    std::cout << ses.get_session_time()/1000 << " DHT LOG:  " << (*i)->message().c_str() << std::endl;
+                    //std::cout << ses.get_session_time()/1000 << " DHT LOG:  " << (*i)->message().c_str() << std::endl;
                     break;
 				//communication
                 case communication_new_device_id_alert::alert_type:
@@ -331,13 +331,19 @@ int main(int argc, char *const argv[])
                 case communication_log_alert::alert_type:
                     break;
 				//blockchain
+                case blockchain_log_alert::alert_type:
+                    std::cout << ses.get_session_time()/1000 << " BLOCKCHAIN LOG:  " << (*i)->message().c_str() << std::endl;
+                    break;
                 case blockchain_new_head_block_alert::alert_type:
+                    std::cout << ses.get_session_time()/1000 << " BLOCKCHAIN LOG New Head Block:  " << (*i)->message().c_str() << std::endl;
                     a_handler.alert_on_new_head_block(*i);
                     break;
                 case blockchain_new_tail_block_alert::alert_type:
+                    std::cout << ses.get_session_time()/1000 << " BLOCKCHAIN LOG New Tail Block:  " << (*i)->message().c_str() << std::endl;
                     a_handler.alert_on_new_tail_block(*i);
                     break;
                 case blockchain_new_consensus_point_block_alert::alert_type:
+                    std::cout << ses.get_session_time()/1000 << " BLOCKCHAIN LOG New Consensus Block:  " << (*i)->message().c_str() << std::endl;
                     a_handler.alert_on_new_consensus_point_block(*i);
                     break;
 				case blockchain_new_transaction_alert::alert_type:
