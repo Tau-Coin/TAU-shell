@@ -396,15 +396,8 @@ namespace libTAU {
 	bool tau_shell_sql::db_unfollow_chain(const std::string& chain_id)
 	{
 
-		std::string community_name_hex_str;
-		for(auto i = chain_id.begin() + blockchain::CHAIN_ID_HASH_MAX_LENGTH * 2; i != chain_id.end(); i++){
-			community_name_hex_str.push_back(*i);
-		}
-		aux::bytes community_name = aux::fromHex(community_name_hex_str);
-		std::cout << "DB UnFollow Chain Community Name: " << community_name.data() << std::endl;
-
         std::string sql = "DELETE FROM Communities WHERE chainID=";
-		sql += "\"" + chain_id + "\")";
+		sql += "\"" + chain_id + "\"";
 		std::cout << sql << std::endl;
 
 		char *err_msg = nullptr;
@@ -416,8 +409,8 @@ namespace libTAU {
 		}
 
 		// update members
-		sql = "DELETE FROM Members WHERE chainID = ";
-		sql += "\"" + chain_id + "\")";
+		sql = "DELETE FROM Members WHERE chainID=";
+		sql += "\"" + chain_id + "\"";
 		std::cout << sql << std::endl;
        	ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
        	if (ok != SQLITE_OK) {
@@ -435,6 +428,10 @@ namespace libTAU {
 
 		//chain_id
         auto id = tx.chain_id();
+
+        if(id.size()==0)
+            return false;
+
         std::cout << "new tx, chain id size: " << id.size()  << std::endl;
 		std::string chain_id = bytes_chain_id_to_string(id.data(), id.size());
 
