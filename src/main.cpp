@@ -294,7 +294,10 @@ int main(int argc, char *const argv[])
         for (std::vector<alert*>::iterator i = alert_queue.begin()
             , end(alert_queue.end()); i != end; ++i)
         {
+            auto now = std::chrono::system_clock::now(); 
+            auto now_c = std::chrono::system_clock::to_time_t(now); 
             //std::cout << ses.get_session_time()/1000 << " " << (*i)->message().c_str() << std::endl;
+            std::cout << std::put_time(std::localtime(&now_c), "%c") << " " << (*i)->message().c_str() << std::endl;
             //fprintf(debug_file, " %s\n", (*i)->message().c_str());
             //std::cout << (*i)->type() <<  " " << log_alert::alert_type << std::endl;
             int alert_type = (*i)->type();
