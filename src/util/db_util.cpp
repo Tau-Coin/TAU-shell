@@ -325,8 +325,14 @@ namespace libTAU {
 
 		//hash
 	 	std::string hash = aux::to_hex(msg_hash);
-		std::cout << hash << std::endl;
+        //cout confirm root
+        if(2==status) {
+            auto now = std::chrono::system_clock::now(); 
+            auto now_c = std::chrono::system_clock::to_time_t(now); 
+            std::cout << std::put_time(std::localtime(&now_c), "%c") << " Confirm-msg-hash: " << hash << std::endl;
+        }
 
+        /*
 		//time
 		std::stringstream ss_time;
 		ss_time << time;
@@ -337,9 +343,7 @@ namespace libTAU {
 		ss_status << status;
 		std::cout << ss_status.str() << std::endl;
 
-		/*
-	      update ChatMsgLOgs		
-		*/
+	    //update ChatMsgLOgs		
         std::string sql = "UPDATE ChatMsgLogs SET status = ";
 		sql += ss_status.str() + ", timestamp = " +
 			   ss_time.str() + " WHERE hash = \"" +
@@ -354,7 +358,7 @@ namespace libTAU {
 			std::cout << "sql update new msg chatmsglogs error" << std::endl;
         	return false;
 		}
-		
+	    */	
 		return true;
 	}
 

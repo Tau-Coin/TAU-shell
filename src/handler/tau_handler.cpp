@@ -104,6 +104,7 @@ static method_handler handlers[] =
     {"get-block-by-hash", &tau_handler::get_block_by_hash},
     {"send-data", &tau_handler::send_data},
     {"get-chain-state", &tau_handler::get_chain_state},
+    {"get-account-info", &tau_handler::get_account_info},
 };
 
 void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
@@ -509,25 +510,36 @@ void tau_handler::get_account_info(std::vector<char>& buf, jsmntok_t* args, std:
 
     std::cout << pubkey_hex_char << std::endl;
 
-    blockchain::account act = m_ses.get_account_info(chain_id, pubkey);
-    if(act.empty()){
-        appendf(buf, "{ \"result\": \"Account\": "
-                     "\"Chain ID\": %s, \"Pubkey\": %s, not existed!",
-                     chain_id_str, pubkey_hex_char);
-        return ;
-    }
+    m_ses.request_chain_state(chain_id);
+   
+    int block_number[3] = {};
+    std::string block_hash[3] = {};
 
-    //balance
-    std::int64_t balance = act.balance();
-    std::int64_t nonce = act.nonce();
-    std::int64_t effective_power = act.effective_power();
-    std::int64_t block_number = act.block_number();
+    //get block number and hash
+    m_db->db_get_chain_state(std::string(chain_id_str), block_number, block_hash);
+
+    std::int64_t balance = 0;
+    std::int64_t nonce = 0;
+    std::int64_t effective_power = 0;
+    std::int64_t state_number = -1;
     
-    appendf(buf, "{\"Chain ID\": %s, \"Pubkey\": %s,"
-            "\"balance\": %ld, \"nonce\": %ld, "
-            "\"effective_power\": %ld, \"block_number\": %ld}",
+    blockchain::account act = m_ses.get_account_info(chain_id, pubkey);
+    if(!act.empty()){
+        //balance
+        balance = act.balance();
+        nonce = act.nonce();
+        effective_power = act.effective_power();
+        state_number = act.block_number();
+    }
+    
+    appendf(buf, "{\"ChainID\": \"%s\", \"Pubkey\": \"%s\","
+            "\"balance\": %ld, \"nonce\": %ld, \"power\": %ld, \"block_number\": %ld, "
+            "\"headBlockNumber\": %d, \"consensusBlockNumber\": %d, \"tailBlockNumber\": %d,"
+            "\"headBlockHash\": \"%s\", \"consensusBlockHash\": \"%s\", \"tailBlockHash\": \"%s\"}",
             chain_id_str, pubkey_hex_char, 
-            balance, nonce, effective_power, block_number);
+            balance, nonce, effective_power, state_number,
+            block_number[0], block_number[1], block_number[2],
+            block_hash[0].c_str(), block_hash[1].c_str(), block_hash[2].c_str());
 }
 
 //TODO:Debug

@@ -251,12 +251,15 @@ int main(int argc, char *const argv[])
     //alert mask
     sp_set.set_int(settings_pack::dht_item_lifetime, 7200);    
 
+    //reopen time when peer is 0
+    sp_set.set_int(settings_pack::max_time_peers_zero, 7200);    
+
     //referable
-    sp_set.set_bool(settings_pack::dht_non_referrable, false);
+    sp_set.set_bool(settings_pack::dht_non_referrable, true);
 
     //disable communication and blockchain
-    sp_set.set_bool(settings_pack::enable_communication, false);
-    //sp_set.set_bool(settings_pack::enable_blockchain, false);
+    //sp_set.set_bool(settings_pack::enable_communication, false);
+    sp_set.set_bool(settings_pack::enable_blockchain, false);
 
     std::cout << "Session parameters' setting Over" << std::endl;
 
@@ -296,9 +299,8 @@ int main(int argc, char *const argv[])
         {
             auto now = std::chrono::system_clock::now(); 
             auto now_c = std::chrono::system_clock::to_time_t(now); 
-            //std::cout << ses.get_session_time()/1000 << " " << (*i)->message().c_str() << std::endl;
             std::cout << std::put_time(std::localtime(&now_c), "%c") << " " << (*i)->message().c_str() << std::endl;
-            //fprintf(debug_file, " %s\n", (*i)->message().c_str());
+            fprintf(debug_file, "%s %s\n", std::put_time(std::localtime(&now_c), "%c"), (*i)->message().c_str());
             //std::cout << (*i)->type() <<  " " << log_alert::alert_type << std::endl;
             int alert_type = (*i)->type();
             switch(alert_type){
@@ -316,11 +318,10 @@ int main(int argc, char *const argv[])
                     a_handler.alert_on_new_device_id(*i);
                     break;
                 case communication_new_message_alert::alert_type:
-                    std::cout << "New Msg Alert, Timestamp: " << ses.get_session_time() << std::endl;
-                    a_handler.alert_on_new_message(*i);
+                    //a_handler.alert_on_new_message(*i);
                     break;
                 case communication_confirmation_root_alert::alert_type:
-                    //a_handler.alert_on_confirmation_root(*i);
+                    a_handler.alert_on_confirmation_root(*i);
                     break;
                 case communication_syncing_message_alert::alert_type:
                     a_handler.alert_on_syncing_message(*i);
@@ -372,7 +373,7 @@ int main(int argc, char *const argv[])
             signal(SIGINT, &sighandler_forcequit);
         }
         if (force_quit) break;
-        ses.wait_for_alert(libTAU::milliseconds(500));
+        //ses.wait_for_alert(libTAU::milliseconds(500));
     }
 
     std::cout << "Cycle Over" << std::endl;
