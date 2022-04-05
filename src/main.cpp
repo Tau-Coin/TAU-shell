@@ -252,7 +252,7 @@ int main(int argc, char *const argv[])
     sp_set.set_int(settings_pack::dht_item_lifetime, 7200);    
 
     //reopen time when peer is 0
-    sp_set.set_int(settings_pack::max_time_peers_zero, 7200);    
+    sp_set.set_int(settings_pack::max_time_peers_zero, 7200000);    
 
     //referable
     sp_set.set_bool(settings_pack::dht_non_referrable, true);
