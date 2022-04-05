@@ -280,12 +280,12 @@ void tau_handler::create_chain_id(std::vector<char>& buf, jsmntok_t* args, std::
     }
     std::cout << "Name: "    << community_name.data() << std::endl;
 
-    std::vector<char> chain_id = m_ses.create_chain_id(community_name);
+    std::vector<char> chain_id_bytes = m_ses.create_chain_id(community_name);
 
-    std::string hex_chain_id = aux::toHex(chain_id);
+    std::string str_chain_id = bytes_chain_id_to_string(chain_id_bytes.data(), chain_id_bytes.size());
 
-    std::cout << "Id: "    << hex_chain_id << std::endl;
-    appendf(buf, "{\"Create Chain Id\": %s \"OK\"}", hex_chain_id.c_str());
+    std::cout << "Id: "    << str_chain_id << std::endl;
+    appendf(buf, "{\"Create Chain Id\": %s \"OK\"}", str_chain_id.c_str());
 }
 
 void tau_handler::create_new_community(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
@@ -487,7 +487,7 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
 
     
     //insert friend info
-    m_db->db_add_new_transaction(tx);
+    //m_db->db_add_new_transaction(tx);
 }
 
 void tau_handler::get_account_info(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)

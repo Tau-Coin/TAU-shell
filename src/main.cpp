@@ -97,6 +97,7 @@ int main(int argc, char *const argv[])
     //读取device_id, account_seed
     char device_id[KEY_LEN + 1]={}; //used for '\0'
     char account_seed[KEY_HEX_LEN + 1]={}; //used for '\0'
+    char pubkey_hex[KEY_HEX_LEN + 1]={}; //used for '\0'
     char bootstrap_nodes[1024]={};
 
     char pid_file[FILE_LEN] = {};
@@ -138,23 +139,20 @@ int main(int argc, char *const argv[])
     std::cout << "Initial CMD Parameters Over" << std::endl;
 
 	//处理seed
-	char* seed = new char[KEY_LEN];
+	std::array<char, KEY_LEN> array_seed;
 	char* pubkey = new char[KEY_LEN];
 	char* seckey = new char[KEY_HEX_LEN];
     if(!strcmp(account_seed, "null")){
         //产生随机数
-        auto array_seed = dht::ed25519_create_seed();
-        seed = array_seed.data();
-        aux::to_hex(seed, KEY_LEN, account_seed);
-
+        array_seed = dht::ed25519_create_seed();
+        aux::to_hex(array_seed.data(), KEY_LEN, account_seed);
     } else {
-	    hex_char_to_bytes_char(account_seed, seed, KEY_HEX_LEN);
-	    aux::ed25519_create_keypair(reinterpret_cast<unsigned char *>(pubkey), 
-								reinterpret_cast<unsigned char *>(seckey), 
-								reinterpret_cast<unsigned char const*>(account_seed));
+	    hex_char_to_bytes_char(account_seed, array_seed.data(), KEY_HEX_LEN);
     }
-	dht::public_key m_pubkey(pubkey);	
-	dht::secret_key m_seckey(seckey);	
+    
+	dht::public_key m_pubkey;
+	dht::secret_key m_seckey;
+	std::tie(m_pubkey, m_seckey) = dht::ed25519_create_keypair(array_seed);
 
     if (daemonize)
     {
@@ -258,8 +256,8 @@ int main(int argc, char *const argv[])
     sp_set.set_bool(settings_pack::dht_non_referrable, true);
 
     //disable communication and blockchain
-    //sp_set.set_bool(settings_pack::enable_communication, false);
-    sp_set.set_bool(settings_pack::enable_blockchain, false);
+    sp_set.set_bool(settings_pack::enable_communication, false);
+    //sp_set.set_bool(settings_pack::enable_blockchain, false);
 
     std::cout << "Session parameters' setting Over" << std::endl;
 
@@ -286,6 +284,8 @@ int main(int argc, char *const argv[])
 
     //port
     std::uint16_t port = ses.get_port_from_pubkey(m_pubkey);
+    aux::to_hex(m_pubkey.bytes.data(), KEY_LEN, pubkey_hex);
+    std::cout <<  "public key: " << pubkey_hex << std::endl;
     std::cout << "port: "  << port << std::endl;
 
     std::vector<alert*> alert_queue;
@@ -373,7 +373,7 @@ int main(int argc, char *const argv[])
             signal(SIGINT, &sighandler_forcequit);
         }
         if (force_quit) break;
-        //ses.wait_for_alert(libTAU::milliseconds(500));
+        ses.wait_for_alert(libTAU::milliseconds(500));
     }
 
     std::cout << "Cycle Over" << std::endl;
