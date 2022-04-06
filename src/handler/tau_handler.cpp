@@ -105,6 +105,8 @@ static method_handler handlers[] =
     {"send-data", &tau_handler::send_data},
     {"get-chain-state", &tau_handler::get_chain_state},
     {"get-account-info", &tau_handler::get_account_info},
+    {"submit-note-transaction", &tau_handler::submit_note_transaction},
+    {"submit-transaction", &tau_handler::submit_transaction},
 };
 
 void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
@@ -348,7 +350,9 @@ void tau_handler::follow_chain_mobile(std::vector<char>& buf, jsmntok_t* args, s
     int size = c->end - c->start;
     buffer[c->end] = 0;
     char const* chain_id_str = &buffer[c->start];
+    std::cout << "Follow Chain Str Size: " << size << std::endl;
     std::vector<char> chain_id = string_chain_id_to_bytes(chain_id_str, size);
+    std::cout << "Follow Chain ID Size: " << chain_id.size() << std::endl;
 
     m_ses.follow_chain(chain_id, peer_list);
 
@@ -418,6 +422,58 @@ void tau_handler::get_chain_state(std::vector<char>& buf, jsmntok_t* args, std::
 }
 
 //TODO:DEBUG
+void tau_handler::submit_note_transaction(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+    jsmntok_t* s = find_key(args, buffer, "sender", JSMN_STRING);
+    jsmntok_t* f = find_key(args, buffer, "fee", JSMN_PRIMITIVE);
+    jsmntok_t* p = find_key(args, buffer, "payload", JSMN_STRING);
+
+    //chain_id
+    int size = c->end - c->start;
+    buffer[c->end] = 0;
+    char const* chain_id_str = &buffer[c->start];
+    std::vector<char> chain_id = string_chain_id_to_bytes(chain_id_str, size);
+
+    //sender
+    buffer[s->end] = 0;
+    char const* sender_pubkey_hex_char = &buffer[s->start];
+    char* sender_pubkey_char = new char[KEY_LEN];
+    hex_char_to_bytes_char(sender_pubkey_hex_char, sender_pubkey_char, KEY_HEX_LEN);
+    dht::public_key sender_pubkey(sender_pubkey_char);
+
+    std::cout << sender_pubkey_hex_char << std::endl;
+
+	//fee
+    std::int64_t fee = atoi(buffer + f->start);
+	if(fee < 0)
+		fee = m_ses.get_median_tx_free(chain_id);
+
+    //payload
+    aux::bytes payload;
+    int index = p->start;
+    while(index < p->end){
+        payload.push_back(buffer[index]);
+        index++;
+    }
+
+    //timestamp
+    std::int64_t time_stamp = m_ses.get_session_time();
+    std::cout << "start to construct the note tx" << std::endl;
+    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, sender_pubkey, fee, payload);
+
+    std::cout << "start to sign the note tx" << std::endl;
+
+	tx.sign(m_pubkey, m_seckey);
+
+	//construct and sign
+    m_ses.submit_transaction(tx);
+
+    //insert friend info
+    //m_db->db_add_new_transaction(tx);
+}
+
+//TODO:DEBUG
 void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
     jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
@@ -457,7 +513,7 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
                      chain_id_str, sender_pubkey_hex_char);
         return ;
     }
-    std::int64_t nonce = act.nonce();
+    std::int64_t nonce = act.nonce() + 1;
 
     //amount
     int amount = atoi(buffer + a->start);
@@ -477,15 +533,16 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
 
     //timestamp
     std::int64_t time_stamp = m_ses.get_session_time();
-
+    std::cout << "start to construct the tx" << std::endl;
     blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, sender_pubkey, receiver_pubkey, nonce, amount, fee, payload);
+
+    std::cout << "start to sign the tx" << std::endl;
 
 	tx.sign(m_pubkey, m_seckey);
 
 	//construct and sign
     m_ses.submit_transaction(tx);
 
-    
     //insert friend info
     //m_db->db_add_new_transaction(tx);
 }

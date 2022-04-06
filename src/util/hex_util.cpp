@@ -31,7 +31,7 @@ namespace libTAU {
         }
 
         std::vector<char> result;
-        result.insert(result.end(), chain_bytes, chain_bytes + strlen(chain_bytes));
+        result.insert(result.end(), chain_bytes, chain_bytes + size_chain_id);
 
         return result;
 	}
@@ -58,7 +58,7 @@ namespace libTAU {
         hex_char_to_bytes_char(chain_hex, chain_bytes, len);
 
         std::vector<char> result;
-        result.insert(result.end(), chain_bytes, chain_bytes + strlen(chain_bytes));
+        result.insert(result.end(), chain_bytes, chain_bytes + len/2);
         return result;
 	}
 }

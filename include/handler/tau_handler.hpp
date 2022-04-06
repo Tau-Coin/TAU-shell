@@ -94,6 +94,8 @@ namespace libTAU
 
 		void unfollow_chain_mobile(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
+		void submit_note_transaction(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
 		void submit_transaction(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 		void get_account_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
