@@ -105,6 +105,11 @@ namespace libTAU {
 	}
 		
 	void alert_handler::alert_on_rollback_block(alert *i){
+		blockchain_rollback_block_alert* a = reinterpret_cast<blockchain_rollback_block_alert*>(i);
+		blockchain::block blk = a -> blk;
+
+		// deal with block
+		m_db->db_delete_block(blk);
 		return;
 	}
 

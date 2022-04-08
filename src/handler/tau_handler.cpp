@@ -52,11 +52,12 @@ extern "C" {
 
 #include "libTAU/session.hpp"
 #include "libTAU/session_status.hpp"
+#include "libTAU/hex.hpp"
 #include "libTAU/performance_counters.hpp"
 #include "libTAU/aux_/common_data.h"
+#include "libTAU/blockchain/block.hpp"
 #include "libTAU/blockchain/transaction.hpp"
 #include "libTAU/communication/message.hpp"
-#include "libTAU/blockchain/block.hpp"
 
 using namespace libTAU;
 
@@ -107,6 +108,7 @@ static method_handler handlers[] =
     {"get-account-info", &tau_handler::get_account_info},
     {"submit-note-transaction", &tau_handler::submit_note_transaction},
     {"submit-transaction", &tau_handler::submit_transaction},
+    {"get-tx-state", &tau_handler::get_tx_state},
 };
 
 void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
@@ -281,18 +283,59 @@ void tau_handler::create_chain_id(std::vector<char>& buf, jsmntok_t* args, std::
         community_name.push_back(buffer[i]);
     }
     std::cout << "Name: "    << community_name.data() << std::endl;
-
     std::vector<char> chain_id_bytes = m_ses.create_chain_id(community_name);
+    std::cout << "Chain id size: "    << chain_id_bytes.size() << std::endl;
 
     std::string str_chain_id = bytes_chain_id_to_string(chain_id_bytes.data(), chain_id_bytes.size());
 
     std::cout << "Id: "    << str_chain_id << std::endl;
-    appendf(buf, "{\"Create Chain Id\": %s \"OK\"}", str_chain_id.c_str());
+    appendf(buf, "{\"chainID\": \"%s\"}", str_chain_id.c_str());
 }
 
-void tau_handler::create_new_community(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer)
+void tau_handler::create_new_community(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-    
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+    jsmntok_t* ks = find_key(args, buffer, "peers", JSMN_ARRAY);
+
+    //chain_id
+    int size = c->end - c->start;
+    buffer[c->end] = 0;
+    char const* chain_id_str = &buffer[c->start];
+    std::vector<char> chain_id = string_chain_id_to_bytes(chain_id_str, size);
+
+    //peer -> account
+    std::cout << "Follow Chain Peers Size: " << ks->size << std::endl;
+    std::map<dht::public_key, blockchain::account> accounts;
+    std::set<dht::public_key> peer_list;
+    for(int i = 0; i < ks->size; i++) {
+        jsmntok_t* pk = find_key_in_array(args, buffer, "peer_key", i, args->size*2 + 2, JSMN_STRING);
+        buffer[pk->end] = 0;
+        char const* pubkey_hex = &buffer[pk->start];
+        std::cout << "key: " << pubkey_hex << std::endl;
+        char* pubkey_char = new char[KEY_LEN];
+        hex_char_to_bytes_char(pubkey_hex, pubkey_char, KEY_HEX_LEN);
+        dht::public_key pubkey(pubkey_char);
+        peer_list.emplace(pubkey);
+        std::int64_t time_stamp = m_ses.get_session_time();
+        blockchain::account act(100000000000, 0, time_stamp, 1, 0);
+        accounts[pubkey] = act;
+    }
+
+    std::int64_t time_stamp = m_ses.get_session_time();
+    //tx, note: d30101906e6f7465207472616e73616374696f6e
+    std::vector<char> payload;
+    payload.resize(20);
+    hex_char_to_bytes_char("d30101906e6f7465207472616e73616374696f6e", payload.data(), 40);
+    auto iter_act = accounts.begin();
+    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, iter_act->first, 0, payload);
+
+    //create new community
+    m_ses.create_new_community(chain_id, accounts, tx);
+
+    //db follow
+    m_db->db_follow_chain(chain_id_str, peer_list);
+
+    appendf(buf, "{\"result\": \"success\"}");
 }
 
 void tau_handler::follow_chain(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
@@ -361,6 +404,24 @@ void tau_handler::follow_chain_mobile(std::vector<char>& buf, jsmntok_t* args, s
     m_db->db_follow_chain(chain_id_str, peer_list);
 
     appendf(buf, "{\"Follow Chain Id\": %s \"OK\"}", chain_id_str);
+}
+
+void tau_handler::get_tx_state(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* h = find_key(args, buffer, "tx_hash", JSMN_STRING);
+
+    //chain_id
+    int size = h->end - h->start;
+    buffer[h->end] = 0;
+    char const* tx_hash_char = &buffer[h->start];
+    std::string tx_hash(tx_hash_char);
+    std::cout << "Get Tx Hash: " << tx_hash << std::endl;
+
+    //peer_list
+    //save chain into db
+    int tx_state = m_db->db_get_tx_state(tx_hash);
+
+    appendf(buf, "{\"result\": \"%s\", \"state\": %d}", "success", tx_state);
 }
 
 void tau_handler::unfollow_chain(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
@@ -459,18 +520,19 @@ void tau_handler::submit_note_transaction(std::vector<char>& buf, jsmntok_t* arg
 
     //timestamp
     std::int64_t time_stamp = m_ses.get_session_time();
-    std::cout << "start to construct the note tx" << std::endl;
     blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, sender_pubkey, fee, payload);
-
-    std::cout << "start to sign the note tx" << std::endl;
-
 	tx.sign(m_pubkey, m_seckey);
-
 	//construct and sign
-    m_ses.submit_transaction(tx);
+    bool result = m_ses.submit_transaction(tx);
+	std::string tx_hash = aux::to_hex(tx.sha256());
 
-    //insert friend info
-    //m_db->db_add_new_transaction(tx);
+    if(result)
+    {
+        //insert friend info
+        appendf(buf, "{\"result\": \"%s\", \"nonce\": %d, \"txHash\":\"%s\"}", "success", 0, tx_hash.c_str());
+    } else {
+        appendf(buf, "{\"result\": \"%s\", \"nonce\": %d, \"txHash\":\"%s\"}", "fail", 0, tx_hash.c_str());
+    }
 }
 
 //TODO:DEBUG
@@ -508,9 +570,7 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
 	//nonce
     blockchain::account act = m_ses.get_account_info(chain_id, sender_pubkey);
     if(act.empty()){
-        appendf(buf, "{ \"Sumit transaction failed\": \"Account\": "
-                     "\"Chain ID\": %s, \"Pubkey\": %s, not existed!",
-                     chain_id_str, sender_pubkey_hex_char);
+        appendf(buf, "{ \"result\": \"%s\"}", "fail");
         return ;
     }
     std::int64_t nonce = act.nonce() + 1;
@@ -533,18 +593,19 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
 
     //timestamp
     std::int64_t time_stamp = m_ses.get_session_time();
-    std::cout << "start to construct the tx" << std::endl;
     blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, sender_pubkey, receiver_pubkey, nonce, amount, fee, payload);
-
-    std::cout << "start to sign the tx" << std::endl;
-
 	tx.sign(m_pubkey, m_seckey);
+	std::string tx_hash = aux::to_hex(tx.sha256());
 
 	//construct and sign
-    m_ses.submit_transaction(tx);
-
-    //insert friend info
-    //m_db->db_add_new_transaction(tx);
+    bool result = m_ses.submit_transaction(tx);
+    if(result)
+    {
+        //insert friend info
+        appendf(buf, "{\"result\": \"%s\", \"nonce\": %d, \"txHash\":\"%s\"}", "success", nonce, tx_hash.c_str());
+    } else {
+        appendf(buf, "{\"result\": \"%s\", \"nonce\": %d, \"txHash\":\"%s\"}", "fail", nonce, tx_hash.c_str());
+    }
 }
 
 void tau_handler::get_account_info(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)

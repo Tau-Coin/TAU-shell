@@ -41,10 +41,14 @@ namespace libTAU {
 		bool db_unfollow_chain(const std::string& chain_id);
 
 		bool db_add_new_transaction(const blockchain::transaction& tx, int status = -1, std::int64_t block_number = -1);
+		bool db_delete_transaction(const blockchain::transaction& tx);
 
 		bool db_add_new_block(const blockchain::block& blk);
+		bool db_delete_block(const blockchain::block& blk);
 
 		bool db_get_chain_state(const std::string& chain_id_hex_str, int* block_number, std::string* block_hash);
+
+		int db_get_tx_state(const std::string& tx_hash);
 
 		bool db_update_community_status(const blockchain::block& blk, int type);
 

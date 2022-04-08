@@ -351,17 +351,17 @@ int main(int argc, char *const argv[])
                     a_handler.alert_on_new_consensus_point_block(*i);
                     break;
 				case blockchain_new_transaction_alert::alert_type:
-					a_handler.alert_on_new_transaction(*i);
+					//a_handler.alert_on_new_transaction(*i);
                     break;
 				//blockchain-useless, current
                 case blockchain_rollback_block_alert::alert_type:
                     a_handler.alert_on_rollback_block(*i);
                     break;
                 case blockchain_fork_point_block_alert::alert_type:
-                    a_handler.alert_on_fork_point_block(*i);
+                    //a_handler.alert_on_fork_point_block(*i);
                     break;
                 case blockchain_top_three_votes_alert::alert_type:
-                    a_handler.alert_on_top_three_votes(*i);
+                    //a_handler.alert_on_top_three_votes(*i);
                     break;
             }
         }

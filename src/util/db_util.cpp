@@ -428,7 +428,7 @@ namespace libTAU {
 	bool tau_shell_sql::db_add_new_transaction(const blockchain::transaction& tx, int status, std::int64_t block_number)
 	{
 	 	std::string hash = aux::to_hex(tx.sha256());
-		std::cout << hash << std::endl;
+		std::cout << "add new tx, hash: " << hash << std::endl;
 
 		//chain_id
         auto id = tx.chain_id();
@@ -436,63 +436,52 @@ namespace libTAU {
         if(id.size()==0)
             return false;
 
-        std::cout << "new tx, chain id size: " << id.size()  << std::endl;
 		std::string chain_id = bytes_chain_id_to_string(id.data(), id.size());
 
 		//timestamp
 		std::int64_t tt = tx.timestamp();
 		std::stringstream tx_time;
 		tx_time << tt;
-		std::cout << tx_time.str() << std::endl;
 
 		//fee
 		std::int64_t tf = tx.fee();
 		std::stringstream tx_fee;
 		tx_fee << tf;
-		std::cout << tx_fee.str() << std::endl;
 
 		//amount
 		std::int64_t ta = tx.amount();
 		std::stringstream tx_amount;
 		tx_amount << ta;
-		std::cout << tx_amount.str() << std::endl;
 	
 		//nonce
 		std::int64_t tn = tx.nonce();
 		std::stringstream tx_nonce;
 		tx_nonce << tn;
-		std::cout << tx_nonce.str() << std::endl;
 			
 		//sender
  		dht::public_key sender_pubkey = tx.sender();
 		std::string sender = aux::toHex(sender_pubkey.bytes);
-		std::cout << sender << std::endl;
 
 		//receiver
  		dht::public_key receiver_pubkey = tx.receiver();
 		std::string receiver = aux::toHex(receiver_pubkey.bytes);
-		std::cout << receiver << std::endl;
 
         //type
         int type = tx.type();
 		std::stringstream tx_type;
         tx_type << type;
-		std::cout << tx_type.str() << std::endl;
 
 		//payload
 		aux::bytes p = tx.payload();
 		std::string payload = aux::toHex(p);
-		std::cout << payload << std::endl;
 
 		//status
 		std::stringstream tx_status;
 		tx_status << status;
-		std::cout << tx_status.str() << std::endl;
 
 		//blocknumber
 		std::stringstream tx_bn;
 		tx_bn << block_number;
-		std::cout << tx_bn.str() << std::endl;
 
         std::string sql = "INSERT INTO Txs VALUES(";
 		sql += "\"" + hash + "\", \"" + 
@@ -509,7 +498,7 @@ namespace libTAU {
 			   tx_amount.str() + 
                ", 0, \"TAU\", \"TAU\", \"TAU\")";
 
-		std::cout << sql << std::endl;
+		std::cout << "add new tx sql: " << sql << std::endl;
 
 		char *err_msg = nullptr;
         int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
@@ -573,7 +562,7 @@ namespace libTAU {
                miner+ "\", " +
 			   blk_reward.str() + ", " + 
 			   blk_cd.str() + ", 0)";
-		std::cout << sql << std::endl;
+		std::cout << "add new block sql: " << sql << std::endl;
 
 		char *err_msg = nullptr;
         int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
@@ -585,6 +574,48 @@ namespace libTAU {
 
 		return true;
 	}
+
+	bool tau_shell_sql::db_delete_block(const blockchain::block& blk)
+	{
+		//hash
+	 	std::string hash = aux::to_hex(blk.sha256());
+		std::cout << "delete block when rollback, hash: " << hash << std::endl;
+
+		//tx
+		blockchain::transaction tx = blk.tx();
+		this->db_delete_transaction(tx);
+
+        std::string sql = "DELETE FROM Blocks Where blockHash=\"" + hash + "\"";
+		std::cout << "delete block when rollback, sql: " << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql delete blk error" << std::endl;
+        	return false;
+		}
+
+		return true;
+	}
+
+	bool tau_shell_sql::db_delete_transaction(const blockchain::transaction& tx)
+    {
+	 	std::string hash = aux::to_hex(tx.sha256());
+		std::cout << "delete tx when rollback, hash: " << hash << std::endl;
+
+        std::string sql = "DELETE FROM Txs Where txID=\"" + hash + "\"";
+		std::cout << "delete tx when rollback, sql: " << sql << std::endl;
+
+		char *err_msg = nullptr;
+        int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
+        if (ok != SQLITE_OK) {
+            sqlite3_free(err_msg);
+			std::cout << "sql delete tx error" << std::endl;
+        	return false;
+		}
+        return true;
+    }
 
 	bool tau_shell_sql::db_update_community_status(const blockchain::block& blk, int type)
 	{
@@ -656,8 +687,8 @@ namespace libTAU {
                 block_hash[1] = value2;
                 std::cout << "hash 1: " << block_hash[1] << std::endl;
 
-                hash = sqlite3_column_text(stmt, 4);
-                length = sqlite3_column_bytes(stmt, 4);
+                hash = sqlite3_column_text(stmt, 5);
+                length = sqlite3_column_bytes(stmt, 5);
                 std::string value3(hash, hash + length);
                 block_hash[2] = value3;
                 std::cout << "hash 2: " << block_hash[2] << std::endl;
@@ -666,5 +697,26 @@ namespace libTAU {
         sqlite3_finalize(stmt);
 
 		return true;
+	}
+
+	int tau_shell_sql::db_get_tx_state(const std::string& tx_hash)
+	{
+		//chain_id
+        std::string sql;
+      	sql = "SELECT txID FROM Txs WHERE txID =\"" + tx_hash + "\"";
+		std::cout << "get tx state sql: " << sql << std::endl;
+
+        sqlite3_stmt * stmt;
+        int ok = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr);
+        if (ok == SQLITE_OK) {
+            for (;sqlite3_step(stmt) == SQLITE_ROW;) {
+                const unsigned char *hash = sqlite3_column_text(stmt, 0);
+                auto length = sqlite3_column_bytes(stmt, 0);
+                std::string value1(hash, hash + length);
+                return 1;
+            }
+        }
+        sqlite3_finalize(stmt);
+		return 0;
 	}
 }
