@@ -253,11 +253,11 @@ int main(int argc, char *const argv[])
     sp_set.set_int(settings_pack::max_time_peers_zero, 7200000);    
 
     //referable
-    sp_set.set_bool(settings_pack::dht_non_referrable, true);
+    sp_set.set_bool(settings_pack::dht_non_referrable, false);
 
     //disable communication and blockchain
     sp_set.set_bool(settings_pack::enable_communication, false);
-    //sp_set.set_bool(settings_pack::enable_blockchain, false);
+    sp_set.set_bool(settings_pack::enable_blockchain, false);
 
     std::cout << "Session parameters' setting Over" << std::endl;
 
@@ -300,7 +300,7 @@ int main(int argc, char *const argv[])
             auto now = std::chrono::system_clock::now(); 
             auto now_c = std::chrono::system_clock::to_time_t(now); 
             std::cout << std::put_time(std::localtime(&now_c), "%c") << " " << (*i)->message().c_str() << std::endl;
-            fprintf(debug_file, "%s %s\n", std::put_time(std::localtime(&now_c), "%c"), (*i)->message().c_str());
+            //fprintf(debug_file, "%s %s\n", std::put_time(std::localtime(&now_c), "%c"), (*i)->message().c_str());
             //std::cout << (*i)->type() <<  " " << log_alert::alert_type << std::endl;
             int alert_type = (*i)->type();
             switch(alert_type){
