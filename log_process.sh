@@ -1,13 +1,14 @@
 #!/bin/bash
 DATE=$(date +%Y%m%d_%H)
 
-LOG0=log_0
-LOG1=log_1
-LOG2=log_2
-LOG3=log_3
-LOG4=log_4
+NUM=5
+LOG=log_
 
-tar -zcvf ./data/${LOG0}_${DATE}.tar.gz ./data/${LOG0}
+for ((i=0;i<${NUM};i++))
+do
+    LOG_FILE=${LOG}${i}
+    tar -zcvf ./data/${LOG_FILE}_${DATE}.tar.gz ./data/${LOG_FILE}
+done
 
 RMDATE=$(date "+%Y%m%d_%H" -d "-3 days")
 
