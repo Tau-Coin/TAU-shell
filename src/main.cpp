@@ -253,11 +253,11 @@ int main(int argc, char *const argv[])
     sp_set.set_int(settings_pack::max_time_peers_zero, 7200000);    
 
     //referable
-    sp_set.set_bool(settings_pack::dht_non_referrable, false);
+    sp_set.set_bool(settings_pack::dht_non_referrable, true);
 
     //disable communication and blockchain
-    sp_set.set_bool(settings_pack::enable_communication, false);
-    sp_set.set_bool(settings_pack::enable_blockchain, false);
+    //sp_set.set_bool(settings_pack::enable_communication, false);
+    //sp_set.set_bool(settings_pack::enable_blockchain, false);
 
     std::cout << "Session parameters' setting Over" << std::endl;
 
@@ -318,7 +318,7 @@ int main(int argc, char *const argv[])
                     a_handler.alert_on_new_device_id(*i);
                     break;
                 case communication_new_message_alert::alert_type:
-                    //a_handler.alert_on_new_message(*i);
+                    a_handler.alert_on_new_message(*i);
                     break;
                 case communication_confirmation_root_alert::alert_type:
                     a_handler.alert_on_confirmation_root(*i);
@@ -355,6 +355,7 @@ int main(int argc, char *const argv[])
                     break;
 				//blockchain-useless, current
                 case blockchain_rollback_block_alert::alert_type:
+                    std::cout << ses.get_session_time()/1000 << " BLOCKCHAIN LOG RollBack Block:  " << (*i)->message().c_str() << std::endl;
                     a_handler.alert_on_rollback_block(*i);
                     break;
                 case blockchain_fork_point_block_alert::alert_type:
@@ -384,4 +385,3 @@ int main(int argc, char *const argv[])
 
     return 0;
 }
-

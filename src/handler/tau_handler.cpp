@@ -244,7 +244,6 @@ void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int6
     char* sender_pubkey_char = new char[KEY_LEN];
     hex_char_to_bytes_char(sender_pubkey_hex, sender_pubkey_char, KEY_HEX_LEN);
     dht::public_key sender_pubkey(sender_pubkey_char);
-
     //std::cout << sender_pubkey_hex << std::endl;
 
     //receiver
@@ -253,6 +252,7 @@ void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int6
     char* receiver_pubkey_char = new char[KEY_LEN];
     hex_char_to_bytes_char(receiver_pubkey_hex, receiver_pubkey_char, KEY_HEX_LEN);
     dht::public_key receiver_pubkey(receiver_pubkey_char);
+    //std::cout << receiver_pubkey_hex << std::endl;
 
     //payload
     aux::bytes payload;
@@ -261,6 +261,7 @@ void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int6
         payload.push_back(buffer[index]);
         index++;
     }
+    //std::cout << payload << std::endl;
 
     //timestamp
     std::int64_t time_stamp = m_ses.get_session_time();
@@ -270,7 +271,7 @@ void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int6
     m_ses.add_new_message(msg);
     
     //insert friend info
-    m_db->db_add_new_message(msg);
+    //m_db->db_add_new_message(msg);
 }
 
 //blockchain
@@ -511,12 +512,17 @@ void tau_handler::submit_note_transaction(std::vector<char>& buf, jsmntok_t* arg
 		fee = m_ses.get_median_tx_free(chain_id);
 
     //payload
+    /*
     aux::bytes payload;
     int index = p->start;
     while(index < p->end){
         payload.push_back(buffer[index]);
         index++;
     }
+    */
+    std::vector<char> payload;
+    payload.resize(20);
+    hex_char_to_bytes_char("d30101906e6f7465207472616e73616374696f6e", payload.data(), 40);
 
     //timestamp
     std::int64_t time_stamp = m_ses.get_session_time();
@@ -584,12 +590,17 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
 		fee = m_ses.get_median_tx_free(chain_id);
 
     //payload
+    /*
     aux::bytes payload;
     int index = p->start;
     while(index < p->end){
         payload.push_back(buffer[index]);
         index++;
     }
+    */
+    std::vector<char> payload;
+    payload.resize(22);
+    hex_char_to_bytes_char("d5010292776972696e67207472616e73616374696f6e", payload.data(), 44);
 
     //timestamp
     std::int64_t time_stamp = m_ses.get_session_time();
@@ -763,14 +774,14 @@ void tau_handler::send_data(std::vector<char>& buf, jsmntok_t* args, std::int64_
     buffer[f->end] = 0;
     char const* receiver_pubkey_hex_char = &buffer[f->start];
     char* receiver_pubkey_char = new char[KEY_LEN];
-    std::cout << "Receiver: " << receiver_pubkey_hex_char << std::endl;
+    //std::cout << "Receiver: " << receiver_pubkey_hex_char << std::endl;
     hex_char_to_bytes_char(receiver_pubkey_hex_char, receiver_pubkey_char, KEY_HEX_LEN);
     dht::public_key receiver_pubkey(receiver_pubkey_char);
 
     //entry
     buffer[p->end] = 0;
     char const* payload = &buffer[p->start];
-    std::cout << "Payload: " << payload << std::endl;
+    //std::cout << "Payload: " << payload << std::endl;
     entry e(payload);
 
     //alpha
@@ -784,6 +795,10 @@ void tau_handler::send_data(std::vector<char>& buf, jsmntok_t* args, std::int64_
     //invoke_limit
     std::int8_t invoke_limit = atoi(buffer + i->start);
     //std::cout << invoke_limit << std::endl;
+
+    auto now = std::chrono::system_clock::now(); 
+    auto now_c = std::chrono::system_clock::to_time_t(now); 
+    std::cout << std::put_time(std::localtime(&now_c), "%c") << " Send-data-Payload: " << payload << std::endl;
 
     m_ses.send(receiver_pubkey, e, alpha, beta, invoke_limit);
 }

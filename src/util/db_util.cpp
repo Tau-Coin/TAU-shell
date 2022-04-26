@@ -428,7 +428,7 @@ namespace libTAU {
 	bool tau_shell_sql::db_add_new_transaction(const blockchain::transaction& tx, int status, std::int64_t block_number)
 	{
 	 	std::string hash = aux::to_hex(tx.sha256());
-		std::cout << "add new tx, hash: " << hash << std::endl;
+		std::cout << "add new tx, hash: " << hash  << " status: " << status << " bn: " << block_number << std::endl;
 
 		//chain_id
         auto id = tx.chain_id();
@@ -519,8 +519,8 @@ namespace libTAU {
 
 		//chain_id
         auto id = blk.chain_id();
-        std::cout << "new block, chain id size: " << id.size()  << std::endl;
 		std::string chain_id = bytes_chain_id_to_string(id.data(), id.size());
+        std::cout << chain_id << std::endl;
 
 		//timestamp
 		std::int64_t bt = blk.timestamp();
@@ -562,7 +562,7 @@ namespace libTAU {
                miner+ "\", " +
 			   blk_reward.str() + ", " + 
 			   blk_cd.str() + ", 0)";
-		std::cout << "add new block sql: " << sql << std::endl;
+		std::cout << "add new head block sql: " << sql << std::endl;
 
 		char *err_msg = nullptr;
         int ok = sqlite3_exec(m_db, sql.data(), nullptr, nullptr, &err_msg);
@@ -621,8 +621,8 @@ namespace libTAU {
 	{
 		//chain_id
         auto id = blk.chain_id();
-        std::cout << "update community, chain id size: " << id.size()  << std::endl;
 		std::string chain_id = bytes_chain_id_to_string(id.data(), id.size());
+        std::cout << chain_id << std::endl;
 
 		//blocknumber
 		std::int64_t bn = blk.block_number();
