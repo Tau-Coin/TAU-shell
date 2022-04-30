@@ -377,7 +377,9 @@ int main(int argc, char *const argv[])
         ses.wait_for_alert(libTAU::milliseconds(500));
     }
 
-    std::cout << "Cycle Over" << std::endl;
+    ses.stop();
+
+    std::cout << "Session Stop Over" << std::endl;
 
     if (debug_file) fclose(debug_file);
 
