@@ -318,7 +318,7 @@ void tau_handler::create_new_community(std::vector<char>& buf, jsmntok_t* args, 
         dht::public_key pubkey(pubkey_char);
         peer_list.emplace(pubkey);
         std::int64_t time_stamp = m_ses.get_session_time();
-        blockchain::account act(100000000000, 0, time_stamp, 1, 0);
+        blockchain::account act(100000000000, 0, 1, 0);
         accounts[pubkey] = act;
     }
 
@@ -328,10 +328,10 @@ void tau_handler::create_new_community(std::vector<char>& buf, jsmntok_t* args, 
     payload.resize(20);
     hex_char_to_bytes_char("d30101906e6f7465207472616e73616374696f6e", payload.data(), 40);
     auto iter_act = accounts.begin();
-    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, iter_act->first, 0, payload);
+    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, iter_act->first, payload);
 
     //create new community
-    m_ses.create_new_community(chain_id, accounts, tx);
+    m_ses.create_new_community(chain_id, accounts);
 
     //db follow
     m_db->db_follow_chain(chain_id_str, peer_list);
@@ -526,7 +526,7 @@ void tau_handler::submit_note_transaction(std::vector<char>& buf, jsmntok_t* arg
 
     //timestamp
     std::int64_t time_stamp = m_ses.get_session_time();
-    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, sender_pubkey, fee, payload);
+    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, sender_pubkey, payload);
 	tx.sign(m_pubkey, m_seckey);
 	//construct and sign
     bool result = m_ses.submit_transaction(tx);
