@@ -769,6 +769,7 @@ void tau_handler::send_data(std::vector<char>& buf, jsmntok_t* args, std::int64_
     jsmntok_t* a = find_key(args, buffer, "alpha", JSMN_PRIMITIVE);
     jsmntok_t* b = find_key(args, buffer, "beta", JSMN_PRIMITIVE);
     jsmntok_t* i = find_key(args, buffer, "invoke_limit", JSMN_PRIMITIVE);
+    jsmntok_t* h = find_key(args, buffer, "hit_limit", JSMN_PRIMITIVE);
 
     //receiver
     buffer[f->end] = 0;
@@ -796,11 +797,14 @@ void tau_handler::send_data(std::vector<char>& buf, jsmntok_t* args, std::int64_
     std::int8_t invoke_limit = atoi(buffer + i->start);
     //std::cout << invoke_limit << std::endl;
 
+    //hit_limit
+    std::int8_t hit_limit = atoi(buffer + i->start);
+
     auto now = std::chrono::system_clock::now(); 
     auto now_c = std::chrono::system_clock::to_time_t(now); 
     std::cout << std::put_time(std::localtime(&now_c), "%c") << " Send-data-Payload: " << payload << std::endl;
 
-    m_ses.send(receiver_pubkey, e, alpha, beta, invoke_limit);
+    m_ses.send(receiver_pubkey, e, alpha, beta, invoke_limit, hit_limit);
 }
 
 tau_handler::tau_handler(session& s, tau_shell_sql* sqldb, auth_interface const* auth, dht::public_key& pubkey, dht::secret_key& seckey)
