@@ -60,8 +60,18 @@ namespace libTAU
 		virtual bool handle_http(mg_connection* conn,
 			mg_request_info const* request_info);
 
+		void udp_analysis(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
 		//获取当前sesstion状态
 		void session_stats(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void stop_io_service(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void restart_io_service(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void crash_test(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void get_all_chains(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 		//communication apis
 		void new_account_seed(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);

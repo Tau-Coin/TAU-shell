@@ -39,6 +39,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "util/response_buffer.hpp" // for appendf
 #include "util/tau_constants.hpp"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <pcap.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <time.h>
+#include <math.h>
+
 #include <string.h> // for strcmp()
 #include <stdio.h>
 #include <vector>
@@ -58,6 +66,47 @@ extern "C" {
 #include "libTAU/blockchain/block.hpp"
 #include "libTAU/blockchain/transaction.hpp"
 #include "libTAU/communication/message.hpp"
+/* *.pcap file format  =  file header(24B) + pkt header(16B) + Frame 
+ * Frame  =  Ethernet header(14B) + IP header(20B) + UDP header(8B) + appdata */
+
+
+//enhernet header (14B)
+typedef struct _eth_hdr  
+{  
+    unsigned char dstmac[6]; //目标mac地址   
+    unsigned char srcmac[6]; //源mac地址   
+     unsigned short eth_type; //以太网类型   
+}eth_hdr; 
+
+
+//IP header 20B
+typedef struct _ip_hdr  
+{  
+    unsigned char ver_hlen; //版本    
+    unsigned char tos;       //服务类型   
+    unsigned short tot_len;  //总长度   
+    unsigned short id;       //标志   
+    unsigned short frag_off; //分片偏移   
+    unsigned char ttl;       //生存时间   
+    unsigned char protocol;  //协议   
+    unsigned short chk_sum;  //检验和   
+    struct in_addr srcaddr;  //源IP地址   
+    struct in_addr dstaddr;  //目的IP地址   
+}ip_hdr;
+  
+
+//udp header  8B
+typedef struct _udp_hdr  
+{  
+    unsigned short src_port; //远端口号   
+    unsigned short dst_port; //目的端口号   
+    unsigned short uhl;      //udp头部长度   
+    unsigned short chk_sum;  //16位udp检验和   
+}udp_hdr;
+
+#define FILE_HEADER          24
+#define FRAME_HEADER_LEN     (sizeof(eth_hdr) + sizeof(ip_hdr) + sizeof(udp_hdr))
+#define NEED_HEADER_INFO     1 
 
 using namespace libTAU;
 
@@ -87,6 +136,7 @@ struct method_handler
 
 static method_handler handlers[] =
 {
+    {"udp-analysis", &tau_handler::udp_analysis},
     {"session-stats", &tau_handler::session_stats},
     {"set-loop-time-interval", &tau_handler::set_loop_time_interval},
     {"add-new-friend", &tau_handler::add_new_friend},
@@ -109,6 +159,10 @@ static method_handler handlers[] =
     {"submit-note-transaction", &tau_handler::submit_note_transaction},
     {"submit-transaction", &tau_handler::submit_transaction},
     {"get-tx-state", &tau_handler::get_tx_state},
+    {"get-all-chains", &tau_handler::get_all_chains},
+    {"stop-io-service", &tau_handler::stop_io_service},
+    {"restart-io-service", &tau_handler::restart_io_service},
+    {"crash-test", &tau_handler::crash_test},
 };
 
 void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
@@ -152,11 +206,154 @@ void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , ch
 
 }
 
+void tau_handler::udp_analysis(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    FILE *fp;
+    int fileOffset;
+    int pktHeaderLen;
+    //struct pcap_file_header *fHeader; 
+    struct pcap_pkthdr *pktHeader;
+
+#ifdef NEED_HEADER_INFO
+    printf("need header info\n");
+    eth_hdr *EthHeader;
+    ip_hdr *IPHeader;
+    udp_hdr *UDPHeader;
+
+    EthHeader  = (eth_hdr*)malloc(sizeof(*EthHeader));
+    IPHeader  = (ip_hdr*)malloc(sizeof(*IPHeader));
+    UDPHeader  = (udp_hdr*)malloc(sizeof(*UDPHeader));
+
+    memset(EthHeader, 0, sizeof(*EthHeader));
+    memset(IPHeader, 0, sizeof(*IPHeader));
+    memset(UDPHeader, 0, sizeof(*UDPHeader));
+#endif
+    pktHeader = (struct pcap_pkthdr*)malloc(sizeof(*pktHeader));
+    char* data = (char*) malloc(1000);
+    memset(pktHeader, 0, sizeof(*pktHeader));
+
+    fp = fopen("/home/cowtc/data/nodes.pcap", "r");
+    if (fp == NULL) {
+        perror("open file error");
+        exit(-1);
+    }
+
+    fileOffset = FILE_HEADER;    //ingore file header
+    int icount = 0;
+    while (fseek(fp, fileOffset, SEEK_SET) == 0) {
+        icount++;
+        char package_head[16];
+        // can get time from pktheader
+        if (fread(package_head, 16, 1, fp) == 0) {
+            printf("file end1 %d\n", icount);
+            break;
+        }
+        // read package head - 数据报头(16 bytes)
+        // T1: 4bytes -> s
+        // T2: 4bytes -> ms
+        // Caplen: 帧长度
+        int package_data_length =   //确定帧长度
+        (int)(unsigned char)package_head[8] +
+        ((int)(unsigned char)package_head[9]) * pow(16.0, 2.0) +
+        ((int)(unsigned char)package_head[10]) * pow(16.0, 4.0) +
+        ((int)(unsigned char)package_head[11]) * pow(16.0, 6.0);
+
+        fileOffset += 16 + package_data_length;
+        pktHeaderLen = package_data_length - FRAME_HEADER_LEN;
+
+        //printf("%d\n", package_data_length);
+
+#ifdef NEED_HEADER_INFO
+        //get eth header...
+        if (fread(EthHeader, 1, sizeof(*EthHeader), fp) == 0) {
+            printf("file end2\n");
+            break;
+        }   
+
+        //get ip header...
+        if (fread(IPHeader, 1, sizeof(*IPHeader), fp) == 0) {
+            printf("file end3\n");
+            break;
+        }   
+               
+        //get udp header 
+        if (fread(UDPHeader, 1, sizeof(*UDPHeader), fp) == 0) {
+            printf("file end4\n");
+            break;
+        }   
+#else
+        fseek(fp,  FRAME_HEADER_LEN, SEEK_CUR); //ingore ether header
+#endif
+        if (fread(data, 1, pktHeaderLen, fp) == 0) {
+            printf("file end5\n");
+            break;
+        }   
+        data[pktHeaderLen] = '\0';
+        //printf("%s\n", data);
+        span<char> data_in(data, pktHeaderLen);
+        //m_ses.udp_packet_analysis( data_in); delete in libTAU
+        usleep(10000);
+    }
+
+    free(data);
+    free(pktHeader);
+#ifdef NEED_HEADER_INFO
+    free(EthHeader);
+    free(IPHeader);
+    free(UDPHeader);
+#endif
+    fclose(fp);
+
+    appendf(buf, "{ \"result\": \"udp analysis success\"}\n");
+}
+
 void tau_handler::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
     // TODO: post session stats instead, and capture the performance counters
     m_ses.post_session_stats();
     appendf(buf, "{ \"result\": \"post session status success\"}\n");
+}
+
+void tau_handler::stop_io_service(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    // TODO: post session stats instead, and capture the performance counters
+    m_ses.stop_service();
+    appendf(buf, "{ \"result\": \"stop io service success\"}\n");
+}
+
+void tau_handler::restart_io_service(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    // TODO: post session stats instead, and capture the performance counters
+    m_ses.restart_service();
+    appendf(buf, "{ \"result\": \"restart io service success\"}\n");
+}
+
+void tau_handler::crash_test(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    // TODO: post session stats instead, and capture the performance counters
+    m_ses.crash_test();
+    appendf(buf, "{ \"result\": \"crash success\"}\n");
+}
+
+void tau_handler::get_all_chains(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    // TODO: post session stats instead, and capture the performance counters
+    std::set<std::vector<char>> cids = m_ses.get_all_chains();
+    std::vector<std::vector<std::int8_t>> chains;
+    std::for_each(cids.begin(), cids.end(), [&](std::vector<char> cid) {
+        std::vector<std::int8_t> chain_id;
+        std::copy(cid.begin(), cid.end(), std::inserter(chain_id, chain_id.begin()));
+        chains.emplace(chains.end(), chain_id);
+    });
+
+    std::cout << chains.size() << std::endl;
+
+    for(int i = 0; i < chains.size(); i++)
+    {
+        std::cout << chains[i].data() << std::endl;
+    }
+    
+    appendf(buf, "{ \"result\": \"get all chains success\"}\n");
 }
 
 //communication apis
@@ -278,13 +475,17 @@ void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int6
 void tau_handler::create_chain_id(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
     jsmntok_t* c = find_key(args, buffer, "community_name", JSMN_STRING);
+    std::vector<char> type;
+    for(int i = 0; i < 4; i++){
+        type.push_back('0'); // "0000" in 1st version
+    }
     std::vector<char> community_name;
     buffer[c->end] = 0;
     for(int i = c->start; i < c->end; i++){
         community_name.push_back(buffer[i]);
     }
     std::cout << "Name: "    << community_name.data() << std::endl;
-    std::vector<char> chain_id_bytes = m_ses.create_chain_id(community_name);
+    std::vector<char> chain_id_bytes = m_ses.create_chain_id(type, community_name);
     std::cout << "Chain id size: "    << chain_id_bytes.size() << std::endl;
 
     std::string str_chain_id = bytes_chain_id_to_string(chain_id_bytes.data(), chain_id_bytes.size());
@@ -306,7 +507,7 @@ void tau_handler::create_new_community(std::vector<char>& buf, jsmntok_t* args, 
 
     //peer -> account
     std::cout << "Follow Chain Peers Size: " << ks->size << std::endl;
-    std::map<dht::public_key, blockchain::account> accounts;
+    std::set<blockchain::account> accounts;
     std::set<dht::public_key> peer_list;
     for(int i = 0; i < ks->size; i++) {
         jsmntok_t* pk = find_key_in_array(args, buffer, "peer_key", i, args->size*2 + 2, JSMN_STRING);
@@ -318,17 +519,9 @@ void tau_handler::create_new_community(std::vector<char>& buf, jsmntok_t* args, 
         dht::public_key pubkey(pubkey_char);
         peer_list.emplace(pubkey);
         std::int64_t time_stamp = m_ses.get_session_time();
-        blockchain::account act(100000000000, 0, 1, 0);
-        accounts[pubkey] = act;
+        blockchain::account act(pubkey, 100000000000, 0);
+        accounts.insert(act);
     }
-
-    std::int64_t time_stamp = m_ses.get_session_time();
-    //tx, note: d30101906e6f7465207472616e73616374696f6e
-    std::vector<char> payload;
-    payload.resize(20);
-    hex_char_to_bytes_char("d30101906e6f7465207472616e73616374696f6e", payload.data(), 40);
-    auto iter_act = accounts.begin();
-    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, iter_act->first, payload);
 
     //create new community
     m_ses.create_new_community(chain_id, accounts);
@@ -530,7 +723,7 @@ void tau_handler::submit_note_transaction(std::vector<char>& buf, jsmntok_t* arg
 	tx.sign(m_pubkey, m_seckey);
 	//construct and sign
     bool result = m_ses.submit_transaction(tx);
-	std::string tx_hash = aux::to_hex(tx.sha256());
+	std::string tx_hash = aux::to_hex(tx.sha1());
 
     if(result)
     {
@@ -575,10 +768,6 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
 
 	//nonce
     blockchain::account act = m_ses.get_account_info(chain_id, sender_pubkey);
-    if(act.empty()){
-        appendf(buf, "{ \"result\": \"%s\"}", "fail");
-        return ;
-    }
     std::int64_t nonce = act.nonce() + 1;
 
     //amount
@@ -606,7 +795,7 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
     std::int64_t time_stamp = m_ses.get_session_time();
     blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version1, time_stamp, sender_pubkey, receiver_pubkey, nonce, amount, fee, payload);
 	tx.sign(m_pubkey, m_seckey);
-	std::string tx_hash = aux::to_hex(tx.sha256());
+	std::string tx_hash = aux::to_hex(tx.sha1());
 
 	//construct and sign
     bool result = m_ses.submit_transaction(tx);
@@ -649,24 +838,18 @@ void tau_handler::get_account_info(std::vector<char>& buf, jsmntok_t* args, std:
 
     std::int64_t balance = 0;
     std::int64_t nonce = 0;
-    std::int64_t effective_power = 0;
-    std::int64_t state_number = -1;
     
     blockchain::account act = m_ses.get_account_info(chain_id, pubkey);
-    if(!act.empty()){
-        //balance
-        balance = act.balance();
-        nonce = act.nonce();
-        effective_power = act.effective_power();
-        state_number = act.block_number();
-    }
+    //balance
+    balance = act.balance();
+    nonce = act.nonce();
     
     appendf(buf, "{\"ChainID\": \"%s\", \"Pubkey\": \"%s\","
-            "\"balance\": %ld, \"nonce\": %ld, \"power\": %ld, \"block_number\": %ld, "
+            "\"balance\": %ld, \"nonce\": %ld, "
             "\"headBlockNumber\": %d, \"consensusBlockNumber\": %d, \"tailBlockNumber\": %d,"
             "\"headBlockHash\": \"%s\", \"consensusBlockHash\": \"%s\", \"tailBlockHash\": \"%s\"}",
             chain_id_str, pubkey_hex_char, 
-            balance, nonce, effective_power, state_number,
+            balance, nonce,
             block_number[0], block_number[1], block_number[2],
             block_hash[0].c_str(), block_hash[1].c_str(), block_hash[2].c_str());
 }
@@ -752,7 +935,7 @@ void tau_handler::get_block_by_hash(std::vector<char>& buf, jsmntok_t* args, std
     block_hash.resize(size/2);
     hex_char_to_bytes_char(block_hash_hex, block_hash.data(), size);
 
-    sha256_hash hash(block_hash);
+    sha1_hash hash(block_hash);
 
     std::cout << block_hash.data() << std::endl;
 
@@ -797,8 +980,7 @@ void tau_handler::send_data(std::vector<char>& buf, jsmntok_t* args, std::int64_
     std::int8_t invoke_limit = atoi(buffer + i->start);
     //std::cout << invoke_limit << std::endl;
 
-    //hit_limit
-    std::int8_t hit_limit = atoi(buffer + i->start);
+    std::int8_t hit_limit = atoi(buffer + h->start);
 
     auto now = std::chrono::system_clock::now(); 
     auto now_c = std::chrono::system_clock::to_time_t(now); 

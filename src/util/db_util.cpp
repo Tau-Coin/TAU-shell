@@ -427,7 +427,7 @@ namespace libTAU {
 
 	bool tau_shell_sql::db_add_new_transaction(const blockchain::transaction& tx, int status, std::int64_t block_number)
 	{
-	 	std::string hash = aux::to_hex(tx.sha256());
+	 	std::string hash = aux::to_hex(tx.sha1());
 		std::cout << "add new tx, hash: " << hash  << " status: " << status << " bn: " << block_number << std::endl;
 
 		//chain_id
@@ -514,7 +514,7 @@ namespace libTAU {
 	bool tau_shell_sql::db_add_new_block(const blockchain::block& blk)
 	{
 		//hash
-	 	std::string hash = aux::to_hex(blk.sha256());
+	 	std::string hash = aux::to_hex(blk.sha1());
 		std::cout << hash << std::endl;
 
 		//chain_id
@@ -578,7 +578,7 @@ namespace libTAU {
 	bool tau_shell_sql::db_delete_block(const blockchain::block& blk)
 	{
 		//hash
-	 	std::string hash = aux::to_hex(blk.sha256());
+	 	std::string hash = aux::to_hex(blk.sha1());
 		std::cout << "delete block when rollback, hash: " << hash << std::endl;
 
 		//tx
@@ -601,7 +601,7 @@ namespace libTAU {
 
 	bool tau_shell_sql::db_delete_transaction(const blockchain::transaction& tx)
     {
-	 	std::string hash = aux::to_hex(tx.sha256());
+	 	std::string hash = aux::to_hex(tx.sha1());
 		std::cout << "delete tx when rollback, hash: " << hash << std::endl;
 
         std::string sql = "DELETE FROM Txs Where txID=\"" + hash + "\"";
@@ -626,7 +626,7 @@ namespace libTAU {
 
 		//blocknumber
 		std::int64_t bn = blk.block_number();
-		std::string block_hash = aux::to_hex(blk.sha256());
+		std::string block_hash = aux::to_hex(blk.sha1());
 		std::stringstream blk_number;
 		blk_number << bn;
 		std::cout << blk_number.str() << std::endl;

@@ -24,6 +24,9 @@
 #include <getopt.h> // for getopt_long
 #include <stdlib.h> // for daemon()
 
+//#include "profiler.h"
+//#include "heap-profiler.h"
+
 const int FILE_LEN = 256;
 
 bool quit = false;
@@ -244,7 +247,9 @@ int main(int argc, char *const argv[])
     sp_set.set_str(settings_pack::db_dir, tau_save_path);
 
     //alert mask
-    sp_set.set_int(settings_pack::alert_mask, alert::all_categories);    
+    alert_category_t atmask = alert::all_categories;
+    //alert_category_t atmask = alert_category::session_log|alert_category::dht_log;
+    sp_set.set_int(settings_pack::alert_mask, atmask);    
 
     //alert mask
     sp_set.set_int(settings_pack::dht_item_lifetime, 7200);    
@@ -256,7 +261,7 @@ int main(int argc, char *const argv[])
     sp_set.set_bool(settings_pack::dht_non_referrable, true);
 
     //disable communication and blockchain
-    //sp_set.set_bool(settings_pack::enable_communication, false);
+    sp_set.set_bool(settings_pack::enable_communication, false);
     //sp_set.set_bool(settings_pack::enable_blockchain, false);
 
     std::cout << "Session parameters' setting Over" << std::endl;
@@ -290,6 +295,11 @@ int main(int argc, char *const argv[])
 
     std::vector<alert*> alert_queue;
     bool shutting_down = false;
+
+    //profile analysis
+    //ProfilerStart("./a.prof");
+    //HeapProfilerStart("./mem.prof");
+
     while (!quit)
     {
         ses.pop_alerts(&alert_queue);
@@ -376,6 +386,10 @@ int main(int argc, char *const argv[])
         if (force_quit) break;
         ses.wait_for_alert(libTAU::milliseconds(500));
     }
+
+    //ProfilerStop();
+    //HeapProfilerDump("exit");
+    //HeapProfilerStop();
 
     ses.stop();
 
