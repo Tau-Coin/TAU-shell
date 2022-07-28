@@ -26,7 +26,7 @@
             /data/TAU_SHELL/TAU_TEST //tau-shell数据存储目录
             .libTAU_test    //libTAU目录
 ```
-	 2. rpc cmd使用
+#### rpc cmd使用
 ./rpc.sh
 ```
 #curl -H "Content-Type: application/json"   --user tau-shell:tester    -X POST  --data '{"method":"get-block-by-hash", "arguments":{"chain_id": "15701c56ad4a8dbd54657374436861696e", "block_hash": "15701c56ad4a8dbd54657374436861696e"}}' http://localhost:8080/rpc ;
