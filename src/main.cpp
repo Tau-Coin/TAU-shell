@@ -261,7 +261,7 @@ int main(int argc, char *const argv[])
     sp_set.set_bool(settings_pack::dht_non_referrable, true);
 
     //disable communication and blockchain
-    sp_set.set_bool(settings_pack::enable_communication, false);
+    //sp_set.set_bool(settings_pack::enable_communication, false);
     //sp_set.set_bool(settings_pack::enable_blockchain, false);
 
     std::cout << "Session parameters' setting Over" << std::endl;
