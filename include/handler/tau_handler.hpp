@@ -88,8 +88,13 @@ namespace libTAU
 
 		void update_friend_info(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
-		// message
 		void add_new_message(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void publish_data(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void subscribe_from_peer(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
+		void send_to_peer(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 		//blockchain
 		void create_chain_id(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
@@ -122,6 +127,7 @@ namespace libTAU
 
 		void get_tx_state(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
+        //dht
         void send_data(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer);
 
 	private:

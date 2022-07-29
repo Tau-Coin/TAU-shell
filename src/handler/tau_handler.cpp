@@ -41,7 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdlib.h>
 #include <stdio.h>
-//#include <pcap.h>
+#include <pcap.h>
 #include <string.h>
 #include <netinet/in.h>
 #include <time.h>
@@ -144,6 +144,9 @@ static method_handler handlers[] =
     {"get-friend-info", &tau_handler::get_friend_info},
     {"delete-friend", &tau_handler::delete_friend},
     {"add-new-message", &tau_handler::add_new_message},
+    {"publish-data", &tau_handler::publish_data},
+    {"subscribe-from-peer", &tau_handler::subscribe_from_peer},
+    {"send-to-peer", &tau_handler::send_to_peer},
     {"create-chain-id", &tau_handler::create_chain_id},
     {"create-new-community", &tau_handler::create_new_community},
     {"follow-chain", &tau_handler::follow_chain},
@@ -205,9 +208,9 @@ void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , ch
         printf("Unhandled: %s: %s\n", m, args ? buffer + args->start : "{}");
 
 }
+
 void tau_handler::udp_analysis(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-    /*
     FILE *fp;
     int fileOffset;
     int pktHeaderLen;
@@ -305,7 +308,6 @@ void tau_handler::udp_analysis(std::vector<char>& buf, jsmntok_t* args, std::int
     fclose(fp);
 
     appendf(buf, "{ \"result\": \"udp analysis success\"}\n");
-    */
 }
 
 void tau_handler::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
@@ -338,7 +340,6 @@ void tau_handler::crash_test(std::vector<char>& buf, jsmntok_t* args, std::int64
 
 void tau_handler::get_all_chains(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-    // TODO: post session stats instead, and capture the performance counters
     std::set<std::vector<char>> cids = m_ses.get_all_chains();
     std::vector<std::vector<std::int8_t>> chains;
     std::for_each(cids.begin(), cids.end(), [&](std::vector<char> cid) {
@@ -472,6 +473,84 @@ void tau_handler::add_new_message(std::vector<char>&, jsmntok_t* args, std::int6
     //m_db->db_add_new_message(msg);
 }
 
+void tau_handler::publish_data(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* k = find_key(args, buffer, "key", JSMN_STRING);
+    jsmntok_t* v = find_key(args, buffer, "value", JSMN_STRING);
+
+    //key
+    aux::bytes key;
+    int index = k->start;
+    while(index < k->end){
+        key.push_back(buffer[index]);
+        index++;
+    }
+
+    //value
+    aux::bytes value;
+    index = v->start;
+    while(index < v->end){
+        value.push_back(buffer[index]);
+        index++;
+    }
+
+    m_ses.publish_data(key, value);
+
+    appendf(buf, "{ \"result\": \"Publish OK\"}\n");
+}
+
+void tau_handler::subscribe_from_peer(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* p = find_key(args, buffer, "peer", JSMN_STRING);
+    jsmntok_t* d = find_key(args, buffer, "data", JSMN_STRING);
+
+    //peer
+    buffer[p->end] = 0;
+    char const* peer_pubkey_hex = &buffer[p->start];
+    char* peer_pubkey_char = new char[KEY_LEN];
+    std::cout << "Peer: " << peer_pubkey_char << std::endl;
+    hex_char_to_bytes_char(peer_pubkey_hex, peer_pubkey_char, KEY_HEX_LEN);
+    dht::public_key peer_pubkey(peer_pubkey_char);
+
+    //data
+    aux::bytes data;
+    int index = d->start;
+    while(index < d->end){
+        data.push_back(buffer[index]);
+        index++;
+    }
+
+    m_ses.subscribe_from_peer(peer_pubkey, data);
+
+    appendf(buf, "{ \"result\": \"Subscribe form peer\": %s \"OK\"}", peer_pubkey_hex);
+}
+
+void tau_handler::send_to_peer(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* p = find_key(args, buffer, "peer", JSMN_STRING);
+    jsmntok_t* d = find_key(args, buffer, "data", JSMN_STRING);
+
+    //peer
+    buffer[p->end] = 0;
+    char const* peer_pubkey_hex = &buffer[p->start];
+    char* peer_pubkey_char = new char[KEY_LEN];
+    std::cout << "Peer: " << peer_pubkey_char << std::endl;
+    hex_char_to_bytes_char(peer_pubkey_hex, peer_pubkey_char, KEY_HEX_LEN);
+    dht::public_key peer_pubkey(peer_pubkey_char);
+
+    //data
+    aux::bytes data;
+    int index = d->start;
+    while(index < d->end){
+        data.push_back(buffer[index]);
+        index++;
+    }
+
+    m_ses.send_to_peer(peer_pubkey, data);
+
+    appendf(buf, "{ \"result\": \"Send to peer\": %s \"OK\"}", peer_pubkey_hex);
+}
+
 //blockchain
 void tau_handler::create_chain_id(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
@@ -601,24 +680,6 @@ void tau_handler::follow_chain_mobile(std::vector<char>& buf, jsmntok_t* args, s
     appendf(buf, "{\"Follow Chain Id\": %s \"OK\"}", chain_id_str);
 }
 
-void tau_handler::get_tx_state(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
-{
-    jsmntok_t* h = find_key(args, buffer, "tx_hash", JSMN_STRING);
-
-    //chain_id
-    int size = h->end - h->start;
-    buffer[h->end] = 0;
-    char const* tx_hash_char = &buffer[h->start];
-    std::string tx_hash(tx_hash_char);
-    std::cout << "Get Tx Hash: " << tx_hash << std::endl;
-
-    //peer_list
-    //save chain into db
-    int tx_state = m_db->db_get_tx_state(tx_hash);
-
-    appendf(buf, "{\"result\": \"%s\", \"state\": %d}", "success", tx_state);
-}
-
 void tau_handler::unfollow_chain(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
 {
     jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
@@ -654,27 +715,6 @@ void tau_handler::unfollow_chain_mobile(std::vector<char>& buf, jsmntok_t* args,
     m_db->db_unfollow_chain(chain_id_str);
     appendf(buf, "{\"Unfollow Chain Id\": %s \"OK\"}", chain_id_str);
 
-}
-
-void tau_handler::get_chain_state(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
-{
-    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
-
-    //chain_id
-    int size = c->end - c->start;
-    buffer[c->end] = 0;
-    char const* chain_id_str = &buffer[c->start];
-    std::vector<char> chain_id = string_chain_id_to_bytes(chain_id_str, size);
-
-    m_ses.request_chain_state(chain_id);
-   
-    int block_number[3] = {};
-    std::string block_hash[3] = {};
-
-    //get block number and hash
-    m_db->db_get_chain_state(std::string(chain_id_str), block_number, block_hash);
-
-    appendf(buf, "{\"headBlockNumber\": %d, \"consensusBlockNumber\": %d, \"tailBlockNumber\": %d, \"headBlockHash\": \"%s\", \"consensusBlockHash\": \"%s\", \"tailBlockHash\": \"%s\"}", block_number[0], block_number[1], block_number[2], block_hash[0].c_str(), block_hash[1].c_str(), block_hash[2].c_str());
 }
 
 //TODO:DEBUG
@@ -943,6 +983,45 @@ void tau_handler::get_block_by_hash(std::vector<char>& buf, jsmntok_t* args, std
     blockchain::block block = m_ses.get_block_by_hash(chain_id, hash);
 
     appendf(buf, block.to_string().c_str());
+}
+
+void tau_handler::get_chain_state(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+
+    //chain_id
+    int size = c->end - c->start;
+    buffer[c->end] = 0;
+    char const* chain_id_str = &buffer[c->start];
+    std::vector<char> chain_id = string_chain_id_to_bytes(chain_id_str, size);
+
+    m_ses.request_chain_state(chain_id);
+   
+    int block_number[3] = {};
+    std::string block_hash[3] = {};
+
+    //get block number and hash
+    m_db->db_get_chain_state(std::string(chain_id_str), block_number, block_hash);
+
+    appendf(buf, "{\"headBlockNumber\": %d, \"consensusBlockNumber\": %d, \"tailBlockNumber\": %d, \"headBlockHash\": \"%s\", \"consensusBlockHash\": \"%s\", \"tailBlockHash\": \"%s\"}", block_number[0], block_number[1], block_number[2], block_hash[0].c_str(), block_hash[1].c_str(), block_hash[2].c_str());
+}
+
+void tau_handler::get_tx_state(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* h = find_key(args, buffer, "tx_hash", JSMN_STRING);
+
+    //chain_id
+    int size = h->end - h->start;
+    buffer[h->end] = 0;
+    char const* tx_hash_char = &buffer[h->start];
+    std::string tx_hash(tx_hash_char);
+    std::cout << "Get Tx Hash: " << tx_hash << std::endl;
+
+    //peer_list
+    //save chain into db
+    int tx_state = m_db->db_get_tx_state(tx_hash);
+
+    appendf(buf, "{\"result\": \"%s\", \"state\": %d}", "success", tx_state);
 }
 
 //send
