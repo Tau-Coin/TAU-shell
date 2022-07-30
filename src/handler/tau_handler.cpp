@@ -166,6 +166,14 @@ static method_handler handlers[] =
     {"stop-io-service", &tau_handler::stop_io_service},
     {"restart-io-service", &tau_handler::restart_io_service},
     {"crash-test", &tau_handler::crash_test},
+    {"add-new-bs-peers", &tau_handler::add_new_bootstrap_peers},
+    {"start-chain", &tau_handler::start_chain},
+    {"get-access-list", &tau_handler::get_access_list},
+    {"get-ban-list", &tau_handler::get_ban_list},
+    {"get-mining-time", &tau_handler::get_mining_time},
+    {"is-tx-in-fee-pool", &tau_handler::is_transaction_in_fee_pool},
+    {"request-chain-data", &tau_handler::request_chain_data},
+    {"put-all-chain-data", &tau_handler::put_all_chain_data},
 };
 
 void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , char* buffer)
@@ -612,6 +620,37 @@ void tau_handler::create_new_community(std::vector<char>& buf, jsmntok_t* args, 
     appendf(buf, "{\"result\": \"success\"}");
 }
 
+void tau_handler::add_new_bootstrap_peers(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+    jsmntok_t* ks = find_key(args, buffer, "peers", JSMN_ARRAY);
+
+    //chain_id
+    int size = c->end - c->start;
+    buffer[c->end] = 0;
+    char const* chain_id_str = &buffer[c->start];
+    std::vector<char> chain_id = string_chain_id_to_bytes(chain_id_str, size);
+
+    //peer -> account
+    std::cout << "Add New BS Peers Size: " << ks->size << std::endl;
+    std::set<dht::public_key> peer_list;
+    for(int i = 0; i < ks->size; i++) {
+        jsmntok_t* pk = find_key_in_array(args, buffer, "peer_key", i, args->size*2 + 2, JSMN_STRING);
+        buffer[pk->end] = 0;
+        char const* pubkey_hex = &buffer[pk->start];
+        std::cout << "key: " << pubkey_hex << std::endl;
+        char* pubkey_char = new char[KEY_LEN];
+        hex_char_to_bytes_char(pubkey_hex, pubkey_char, KEY_HEX_LEN);
+        dht::public_key pubkey(pubkey_char);
+        peer_list.emplace(pubkey);
+    }
+
+    //create new community
+    m_ses.add_new_bootstrap_peers(chain_id, peer_list);
+
+    appendf(buf, "{\"result\": \"success\"}");
+}
+
 void tau_handler::follow_chain(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
     jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
@@ -699,6 +738,120 @@ void tau_handler::unfollow_chain(std::vector<char>& buf, jsmntok_t* args, std::i
 
 }
 
+void tau_handler::start_chain(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+
+    //deal with chain id
+    int size = c->end - c->start; //input chars size
+    buffer[c->end] = 0;
+    char* chain_id_hex = &buffer[c->start];
+    std::string chain_id_hex_str(chain_id_hex);
+    std::vector<char> chain_id_char = hex_chain_id_to_bytes(chain_id_hex, size);
+
+    m_ses.start_chain(chain_id_char);
+
+    appendf(buf, "{\"Start Chain Id\": %s \"OK\"}", chain_id_hex);
+}
+
+void tau_handler::put_all_chain_data(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+
+    //deal with chain id
+    int size = c->end - c->start; //input chars size
+    buffer[c->end] = 0;
+    char* chain_id_hex = &buffer[c->start];
+    std::string chain_id_hex_str(chain_id_hex);
+    std::vector<char> chain_id_char = hex_chain_id_to_bytes(chain_id_hex, size);
+
+    m_ses.put_all_chain_data(chain_id_char);
+
+    appendf(buf, "{\"Put Data Chain Id\": %s \"OK\"}", chain_id_hex);
+}
+
+void tau_handler::get_access_list(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+
+    //deal with chain id
+    int size = c->end - c->start; //input chars size
+    buffer[c->end] = 0;
+    char* chain_id_hex = &buffer[c->start];
+    std::string chain_id_hex_str(chain_id_hex);
+    std::vector<char> chain_id_char = hex_chain_id_to_bytes(chain_id_hex, size);
+
+    std::set<dht::public_key> keys = m_ses.get_access_list(chain_id_char);
+
+    //TODO: cout << keys
+    appendf(buf, "{\"Get access list Chain Id\": %s \"OK\"}", chain_id_hex);
+}
+
+void tau_handler::get_ban_list(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+
+    //deal with chain id
+    int size = c->end - c->start; //input chars size
+    buffer[c->end] = 0;
+    char* chain_id_hex = &buffer[c->start];
+    std::string chain_id_hex_str(chain_id_hex);
+    std::vector<char> chain_id_char = hex_chain_id_to_bytes(chain_id_hex, size);
+
+    std::set<dht::public_key> keys = m_ses.get_ban_list(chain_id_char);
+
+    //TODO: cout << keys
+    appendf(buf, "{\"Get ban list Chain Id\": %s \"OK\"}", chain_id_hex);
+}
+
+void tau_handler::get_mining_time(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+
+    //deal with chain id
+    int size = c->end - c->start; //input chars size
+    buffer[c->end] = 0;
+    char* chain_id_hex = &buffer[c->start];
+    std::string chain_id_hex_str(chain_id_hex);
+    std::vector<char> chain_id_char = hex_chain_id_to_bytes(chain_id_hex, size);
+
+    std::int64_t time_left = m_ses.get_mining_time(chain_id_char);
+
+    //TODO: cout << keys
+    appendf(buf, "{\"Get mining time Chain Id\": %s , time left %ds \"OK\"}", chain_id_hex, time_left);
+}
+
+void tau_handler::is_transaction_in_fee_pool(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+    jsmntok_t* h = find_key(args, buffer, "chain_id", JSMN_STRING);
+
+    //deal with chain id
+    int size = c->end - c->start; //input chars size
+    buffer[c->end] = 0;
+    char* chain_id_hex = &buffer[c->start];
+    std::string chain_id_hex_str(chain_id_hex);
+    std::vector<char> chain_id_char = hex_chain_id_to_bytes(chain_id_hex, size);
+
+    //txhash
+    size = h->start - h->end + 1;
+    std::cout << size << std::endl;
+    buffer[h->end] = 0;
+    char const* tx_hash_hex = &buffer[c->start];
+    std::vector<char> tx_hash;
+    tx_hash.resize(size/2);
+    hex_char_to_bytes_char(tx_hash_hex, tx_hash.data(), size);
+
+    sha1_hash hash(tx_hash);
+
+    std::cout << tx_hash.data() << std::endl;
+
+    bool existed = m_ses.is_transaction_in_fee_pool(chain_id_char, hash);
+
+    //TODO: cout << keys
+    appendf(buf, "{\"Get tx in Chain Id\": %s , hash: %s, existed: %ds \"OK\"}", chain_id_hex, tx_hash_hex, existed);
+}
+
 void tau_handler::unfollow_chain_mobile(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
     jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
@@ -715,6 +868,30 @@ void tau_handler::unfollow_chain_mobile(std::vector<char>& buf, jsmntok_t* args,
     m_db->db_unfollow_chain(chain_id_str);
     appendf(buf, "{\"Unfollow Chain Id\": %s \"OK\"}", chain_id_str);
 
+}
+
+void tau_handler::request_chain_data(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
+{
+    jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
+    jsmntok_t* p = find_key(args, buffer, "peer", JSMN_STRING);
+
+    //chain_id
+    int size = c->end - c->start;
+    buffer[c->end] = 0;
+    char const* chain_id_str = &buffer[c->start];
+    std::vector<char> chain_id = string_chain_id_to_bytes(chain_id_str, size);
+
+    //peer
+    buffer[p->end] = 0;
+    char const* peer_pubkey_hex = &buffer[p->start];
+    char* peer_pubkey_char = new char[KEY_LEN];
+    std::cout << "Peer: " << peer_pubkey_char << std::endl;
+    hex_char_to_bytes_char(peer_pubkey_hex, peer_pubkey_char, KEY_HEX_LEN);
+    dht::public_key peer_pubkey(peer_pubkey_char);
+
+    m_ses.request_chain_data(chain_id, peer_pubkey);
+
+    appendf(buf, "{ \"result\": \"Request peer\": %s, \"ChainID:\": %s, \"OK\"}", chain_id, peer_pubkey_hex);
 }
 
 //TODO:DEBUG
@@ -971,7 +1148,7 @@ void tau_handler::get_block_by_hash(std::vector<char>& buf, jsmntok_t* args, std
     size = h->start - h->end + 1;
     std::cout << size << std::endl;
     buffer[h->end] = 0;
-    char const* block_hash_hex = &buffer[c->start];
+    char const* block_hash_hex = &buffer[h->start];
     std::vector<char> block_hash;
     block_hash.resize(size/2);
     hex_char_to_bytes_char(block_hash_hex, block_hash.data(), size);

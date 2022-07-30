@@ -127,6 +127,16 @@ namespace libTAU
 
 		void get_tx_state(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
 
+        //added in blockchain
+        void add_new_bootstrap_peers(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+        void start_chain(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+        void get_access_list(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+        void get_ban_list(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+        void get_mining_time(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+        void is_transaction_in_fee_pool(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+        void request_chain_data(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+        void put_all_chain_data(std::vector<char>&, jsmntok_t* args, std::int64_t tag, char* buffer);
+
         //dht
         void send_data(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer);
 
