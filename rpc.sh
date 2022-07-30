@@ -60,6 +60,21 @@ curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data
 
 #curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"get-tx-state", "arguments":{"tx_hash": "1f69fc8c934e0f2c44172ab5d300afc9c55dea5d6f94e08b1e7815d4ed0b6cf1"}}' http://localhost:9090/rpc ;
 
+#curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"add-new-bs-peers", "arguments":{"chain_id": "15701c56ad4a8dbd54657374436861696e", "peers":[{"peer_key": "6f6e6e5d461a1978fd087c7ae433d3fed6b66005097ecea1ac95417c058cf1f9"}]}}' http://localhost:9090/rpc ;
+
+#curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"start-chain", "arguments":{"chain_id": "15701c56ad4a8dbd54657374436861696e"}}' http://localhost:9090/rpc ;
+
+#curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"get-access-list", "arguments":{"chain_id": "15701c56ad4a8dbd54657374436861696e"}}' http://localhost:9090/rpc ;
+
+#curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"get-ban-list", "arguments":{"chain_id": "15701c56ad4a8dbd54657374436861696e"}}' http://localhost:9090/rpc ;
+
+#curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"get-mining-time", "arguments":{"chain_id": "15701c56ad4a8dbd54657374436861696e"}}' http://localhost:9090/rpc ;
+
+#curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"is-tx-in-fee-pool", "arguments":{"chain_id": "15701c56ad4a8dbd54657374436861696e", "tx_hash": "15701c56ad4a8dbd54657374436861696e"}}' http://localhost:9090/rpc ;
+
+#curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"request-chain-data", "arguments":{"chain_id": "15701c56ad4a8dbd54657374436861696e", "peer":"6f6e6e5d461a1978fd087c7ae433d3fed6b66005097ecea1ac95417c058cf1f9"}}' http://localhost:9090/rpc ;
+
+#curl -H "Content-Type: application/json" --user tau-shell:tester -X POST  --data '{"method":"put-all-chain-data", "arguments":{"chain_id": "15701c56ad4a8dbd54657374436861696e"}}' http://localhost:9090/rpc ;
 
 
 ### dht
