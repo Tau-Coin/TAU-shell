@@ -824,7 +824,7 @@ void tau_handler::get_mining_time(std::vector<char>& buf, jsmntok_t* args, std::
 void tau_handler::is_transaction_in_fee_pool(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer) 
 {
     jsmntok_t* c = find_key(args, buffer, "chain_id", JSMN_STRING);
-    jsmntok_t* h = find_key(args, buffer, "chain_id", JSMN_STRING);
+    jsmntok_t* h = find_key(args, buffer, "tx_hash", JSMN_STRING);
 
     //deal with chain id
     int size = c->end - c->start; //input chars size

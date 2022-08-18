@@ -34,7 +34,7 @@ namespace libTAU {
 
 		bool db_add_new_message(const communication::message& msg, int status = 0);
 
-		bool db_update_message_status(const sha256_hash& msg_hash, std::int64_t time, int status); 
+		bool db_update_message_status(const sha1_hash& msg_hash, std::int64_t time, int status); 
 
 		//blockchain
 		bool db_follow_chain(const std::string& chain_id, std::set<dht::public_key> peers);

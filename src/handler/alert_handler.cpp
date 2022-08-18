@@ -44,7 +44,7 @@ namespace libTAU {
 	void alert_handler::alert_on_confirmation_root(alert* i){
 		communication_confirmation_root_alert* a = reinterpret_cast<communication_confirmation_root_alert*>(i);
 		dht::public_key pubkey = a -> peer;
-		std::vector<sha256_hash> msg_hashes = a -> confirmation_roots;
+		std::vector<sha1_hash> msg_hashes = a -> confirmation_roots;
 		std::int64_t time_stamp = a -> time;
 	
 		for(auto i = msg_hashes.begin(); i != msg_hashes.end(); i++){
@@ -55,7 +55,7 @@ namespace libTAU {
 	void alert_handler::alert_on_syncing_message(alert* i){
 		communication_syncing_message_alert* a = reinterpret_cast<communication_syncing_message_alert*>(i);
 		dht::public_key pubkey = a -> peer;
-		sha256_hash msg_hash = a -> syncing_msg_hash;
+		sha1_hash msg_hash = a -> syncing_msg_hash;
 		std::int64_t time_stamp = a -> time;
 		m_db->db_update_message_status(msg_hash, time_stamp, 1);
 	}

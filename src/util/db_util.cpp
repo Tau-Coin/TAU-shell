@@ -244,7 +244,7 @@ namespace libTAU {
 	bool tau_shell_sql::db_add_new_message(const communication::message& msg, int status)
 	{
 		//hash
-	 	std::string hash = aux::to_hex(msg.sha256());
+	 	std::string hash = aux::to_hex(msg.sha1());
 		std::cout << hash << std::endl;
 
         std::cout << "========New=====Msg========Alert=========" << std::endl;
@@ -321,7 +321,7 @@ namespace libTAU {
 		return true;
 	}
 
-	bool tau_shell_sql::db_update_message_status(const sha256_hash& msg_hash, std::int64_t time, int status) {
+	bool tau_shell_sql::db_update_message_status(const sha1_hash& msg_hash, std::int64_t time, int status) {
 
 		//hash
 	 	std::string hash = aux::to_hex(msg_hash);
