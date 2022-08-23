@@ -593,7 +593,7 @@ void tau_handler::create_new_community(std::vector<char>& buf, jsmntok_t* args, 
     int size = c->end - c->start;
     buffer[c->end] = 0;
     char const* chain_id_str = &buffer[c->start];
-    std::vector<char> chain_id = string_chain_id_to_bytes(chain_id_str, size);
+    std::vector<char> chain_id = hex_chain_id_to_bytes(chain_id_str, size);
 
     //peer -> account
     std::cout << "Follow Chain Peers Size: " << ks->size << std::endl;
