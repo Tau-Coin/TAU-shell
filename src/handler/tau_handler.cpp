@@ -41,7 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <pcap.h>
+//#include <pcap.h>
 #include <string.h>
 #include <netinet/in.h>
 #include <time.h>
@@ -219,6 +219,7 @@ void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , ch
 
 void tau_handler::udp_analysis(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
+/*
     FILE *fp;
     int fileOffset;
     int pktHeaderLen;
@@ -316,6 +317,7 @@ void tau_handler::udp_analysis(std::vector<char>& buf, jsmntok_t* args, std::int
     fclose(fp);
 
     appendf(buf, "{ \"result\": \"udp analysis success\"}\n");
+*/
 }
 
 void tau_handler::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
