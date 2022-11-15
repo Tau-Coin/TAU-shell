@@ -41,7 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdlib.h>
 #include <stdio.h>
-//#include <pcap.h>
+#include <pcap.h>
 #include <string.h>
 #include <netinet/in.h>
 #include <time.h>
@@ -219,7 +219,6 @@ void tau_handler::handle_json_rpc(std::vector<char>& buf, jsmntok_t* tokens , ch
 
 void tau_handler::udp_analysis(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
 {
-    /*
     FILE *fp;
     int fileOffset;
     int pktHeaderLen;
@@ -317,7 +316,6 @@ void tau_handler::udp_analysis(std::vector<char>& buf, jsmntok_t* args, std::int
     fclose(fp);
 
     appendf(buf, "{ \"result\": \"udp analysis success\"}\n");
-    */
 }
 
 void tau_handler::session_stats(std::vector<char>& buf, jsmntok_t* args, std::int64_t tag, char* buffer)
@@ -938,22 +936,27 @@ void tau_handler::submit_note_transaction(std::vector<char>& buf, jsmntok_t* arg
     hex_char_to_bytes_char("d30101906e6f7465207472616e73616374696f6e", payload.data(), 40);
 
     //timestamp
-	/*
     std::int64_t time_stamp = m_ses.get_session_time();
-    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version_1, time_stamp, sender_pubkey, payload);
+
+	//p_hash
+	std::vector<char> tx_hash;
+	tx_hash.resize(40/2);
+	hex_char_to_bytes_char("d30101906e6f7465207472616e73616374696f6e", tx_hash.data(), size);
+	sha1_hash hash(tx_hash);
+
+    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version_1, time_stamp, sender_pubkey, hash, payload);
 	tx.sign(m_pubkey, m_seckey);
 	//construct and sign
     bool result = m_ses.submit_transaction(tx);
-	std::string tx_hash = aux::to_hex(tx.sha1());
+	std::string tx_hash_1 = aux::to_hex(tx.sha1());
 
     if(result)
     {
         //insert friend info
-        appendf(buf, "{\"result\": \"%s\", \"nonce\": %d, \"txHash\":\"%s\"}", "success", 0, tx_hash.c_str());
+        appendf(buf, "{\"result\": \"%s\", \"nonce\": %d, \"txHash\":\"%s\"}", "success", 0, tx_hash_1.c_str());
     } else {
-        appendf(buf, "{\"result\": \"%s\", \"nonce\": %d, \"txHash\":\"%s\"}", "fail", 0, tx_hash.c_str());
+        appendf(buf, "{\"result\": \"%s\", \"nonce\": %d, \"txHash\":\"%s\"}", "fail", 0, tx_hash_1.c_str());
     }
-	*/
 }
 
 //TODO:DEBUG
