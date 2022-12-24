@@ -238,7 +238,7 @@ int main(int argc, char *const argv[])
 
     //listen port
     std::stringstream listen_interfaces;
-    listen_interfaces << "0.0.0.0:" << listen_port << ",[::]:" << listen_port;
+    listen_interfaces << "172.26.1.78:" << listen_port;
     std::cout << "listen port: " << listen_interfaces.str() << std::endl;
     sp_set.set_str(settings_pack::listen_interfaces, listen_interfaces.str());
 
@@ -258,11 +258,11 @@ int main(int argc, char *const argv[])
     sp_set.set_int(settings_pack::max_time_peers_zero, 7200000);    
 
     //referable
-    sp_set.set_bool(settings_pack::dht_non_referrable, true);
+    sp_set.set_bool(settings_pack::dht_non_referrable, false);
 
     //disable communication and blockchain
-    //sp_set.set_bool(settings_pack::enable_communication, false);
-    //sp_set.set_bool(settings_pack::enable_blockchain, false);
+    sp_set.set_bool(settings_pack::enable_communication, false);
+    sp_set.set_bool(settings_pack::enable_blockchain, false);
 
     std::cout << "Session parameters' setting Over" << std::endl;
 

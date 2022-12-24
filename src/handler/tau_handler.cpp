@@ -946,7 +946,7 @@ void tau_handler::submit_note_transaction(std::vector<char>& buf, jsmntok_t* arg
 	hex_char_to_bytes_char("d30101906e6f7465207472616e73616374696f6e", tx_hash.data(), size);
 	sha1_hash hash(tx_hash);
 
-    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version_1, time_stamp, sender_pubkey, hash, payload);
+    blockchain::transaction tx(chain_id, time_stamp, sender_pubkey, hash, payload);
 	tx.sign(m_pubkey, m_seckey);
 	//construct and sign
     bool result = m_ses.submit_transaction(tx);
@@ -1020,7 +1020,7 @@ void tau_handler::submit_transaction(std::vector<char>& buf, jsmntok_t* args, st
 
     //timestamp
     std::int64_t time_stamp = m_ses.get_session_time();
-    blockchain::transaction tx(chain_id, blockchain::tx_version::tx_version_1, time_stamp, sender_pubkey, receiver_pubkey, nonce, amount, fee, payload);
+    blockchain::transaction tx(chain_id, time_stamp, sender_pubkey, receiver_pubkey, nonce, amount, fee, payload);
 	tx.sign(m_pubkey, m_seckey);
 	std::string tx_hash = aux::to_hex(tx.sha1());
 
